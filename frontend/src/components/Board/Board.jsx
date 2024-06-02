@@ -10,7 +10,17 @@ export default function Board({ gameState, setSelected  }) {
     }, [])
 
     const possibleMoves = gameState.selectedPiece.possibleMoves;
+    
+    const isSquareInCheck = (row, col) => {
+        if(!gameState.status.includes('check')) return false;
+        const position = gameState.status.split('-');
+        const points = position[2].split(';');
+        const checkRow = parseInt(points[0]);
+        const checkCol = parseInt(points[1])
+        return (points && (checkRow === row && checkCol === col));
 
+    }
+    console.log(isSquareInCheck(0, 4))
     return useMemo(() => (
         
         <div className="Board">
@@ -26,6 +36,8 @@ export default function Board({ gameState, setSelected  }) {
                             setSelected={() => setSelected(rowIndex, colIndex)}
                             isSelected={gameState.selectedPiece && gameState.selectedPiece.row === rowIndex && gameState.selectedPiece.col === colIndex}
                             possibleMove={isPointValidated({row: rowIndex, col: colIndex},possibleMoves)}
+                            //w-check-4;5
+                            inCheck={isSquareInCheck(rowIndex, colIndex)}
                         />
                     )})
 

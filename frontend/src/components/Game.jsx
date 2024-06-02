@@ -135,7 +135,7 @@ export default function () {
                             row,
                             col,
                             piece: movedPiece,
-                            possibleMoves: getMovesForPiece(gt.board, row, col, movedPiece, color)
+                            possibleMoves: getMovesForPiece(gt.board, row, col, movedPiece, color, gt.castleRuined)
                         }
                     }
                 })
@@ -147,14 +147,14 @@ export default function () {
     }
     useEffect(() => {
         const color = gameState.turn[0];
-        const inCheck = isInCheck(gameState.board, color);
+        const inCheck = isInCheck(gameState.board, color, gameState.castleRuined);
         const castledRuined = gameState.castleRuined;
 
         if (inCheck) {
             const kingPosition = getKingPosition(gameState.board, color);
-            const kingMoves = getKingMoves(gameState.castleRuined.small[color], gameState.castleRuined.big[color], kingPosition[0], kingPosition[1]);
-            const validKingMoves = filterOwnCapturesAndPins(gameState.board, kingPosition[0], kingPosition[1], kingMoves, color);
-            console.log(validKingMoves)
+            const kingMoves = getKingMoves(kingPosition[0], kingPosition[1]);
+            const validKingMoves = filterOwnCapturesAndPins(gameState.board, kingPosition[0], kingPosition[1], kingMoves, color, gameState.castleRuined);
+
             const opponentColor = getOppositeColor(color);
             const checkingPieces = getAllPieces(gameState.board, opponentColor).filter(({ row, col, piece }) => {
                 const moves = getMovesForPiece(gameState.board, row, col, piece, opponentColor, castledRuined);
@@ -174,7 +174,7 @@ export default function () {
             } else {
                 setGameState(prevState => ({
                     ...prevState,
-                    status: `${color} is in check`
+                    status: `${color}-check-${kingPosition[0]};${kingPosition[1]}`
                 }));
             }
         } else {
@@ -184,10 +184,9 @@ export default function () {
             }));
         }
     }, [gameState.board, gameState.turn]);
-
-
+    
 
     return (
-        <Board gameState={gameState} setSelected={setSelected} handleMovePiece={handleMovePiece} />
+        <Board gameState={gameState} setSelected={setSelected} handleMovePiece={handleMovePiece} pointInCheck={gameState}/>
     )
 }

@@ -75,26 +75,26 @@ export function getRookMoves(board, row, col) {
 export function getQueenMoves(board, row, col) {
     return getRookMoves(board, row, col).concat(getDiagonals(board, row, col));
 }
-export function getPawnMoves(row, col, color) {
+export function getPawnMoves(board, row, col, color) {
     const points = []
-    if (color === 'b') {
+    if (color === 'b' && isPathClear(board, row, col, row + 1, col)) {
         points.push({
             row: row + 1,
             col: col
         })
-        if (row === 1) {
+        if (row === 1 && isPathClear(board, row, col, row + 2, col)) {
             points.push({
                 row: row + 2,
                 col: col
             })
         }
     }
-    else {
+    else if (isPathClear(board, row, col, row - 1, col)){
         points.push({
             row: row - 1,
             col: col
         })
-        if (row === 6) {
+        if (row === 6 && isPathClear(board, row, col, row - 2, col)) {
             points.push({
                 row: row - 2,
                 col: col
@@ -103,22 +103,9 @@ export function getPawnMoves(row, col, color) {
     }
     return points;
 }
-export function getKingMoves(smCastleRuined, bigCastleRuined, row, col) {
+export function getKingMoves(row, col) {
     const points = getPlusMinus(row, col, 1, 1).concat(getAdjacent(row, col));
-    if (!smCastleRuined) {
-        points.push({
-            row,
-            col: col + 2,
-            smcastle: true
-        })
-    }
-    if (!bigCastleRuined) {
-        points.push({
-            row,
-            col: col - 3,
-            bigcastle: true
-        })
-    }
+
     return points;
 }
 export function getAllMoveTypes(board, row, col) {
