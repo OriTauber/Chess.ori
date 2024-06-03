@@ -1,0 +1,23 @@
+.Square{
+    width: 98px;
+    height: 98px;
+    border: 1px inset black ;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    
+
+}
+.Selected{
+    background-color: rgb(143, 151, 133) !important;
+    opacity: 0.7;
+}
+.Check {
+    background-color: brown !important;
+}
+.Mate {
+    background-color: rgb(88, 13, 13) !important;
+    border: 1px dotted black;
+}
+

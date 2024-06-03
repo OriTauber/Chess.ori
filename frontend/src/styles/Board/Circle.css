@@ -1,0 +1,8 @@
+.Circle {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgb(31, 19, 19);
+    /* background-color: rgba(0, 0, 0, 0.527); */
+}
