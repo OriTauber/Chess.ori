@@ -4,6 +4,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import Game from './components/Game'
 import Modal from './components/Modal'
+import Promote from './components/Promote'
 
 function App() {
   

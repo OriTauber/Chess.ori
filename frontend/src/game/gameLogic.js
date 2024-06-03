@@ -21,7 +21,9 @@ export function getOppositeColor(color) {
 
 export function pointsToCaptureInList(board, points, attackingColor, castledRuined) {
     const validatedPoints = [];
+    if(!points || points.length === 0) return validatePoint;
     for (let point of points) {
+        
         const piece = board[point.row][point.col];
         if (piece && piece[0] !== attackingColor) {
             validatedPoints.push(point);
@@ -42,6 +44,7 @@ export function filterOwnCapturesAndPins(board, fromRow, fromCol, points, attack
     for (let point of points) {
         const piece = board[point.row][point.col];
         if (!piece || piece[0] !== attackingColor) {
+            console.log(point)
             if (isMoveLegal(board, fromRow, fromCol, point.row, point.col, attackingColor, castledRuined)) {
                 validatedPoints.push(point);
             }

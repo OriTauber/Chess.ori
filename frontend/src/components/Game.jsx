@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Board from "./Board/Board";
-import { movePiece, getDiagonalPawnCaptures } from "../game/gameUtils"
+import { movePiece, getDiagonalPawnCaptures, isPawnPromoting } from "../game/gameUtils"
 import { getKingMoves, isPointValidated } from "../game/moveValidator";
 
 import {
@@ -12,11 +12,12 @@ import {
 } from '../game/gameLogic'
 import soundManager from "../game/soundManager";
 import Modal from "./Modal";
+import Promote from "./Promote";
 
 const initialState = {
     board: [
         ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'], // Black pieces
-        ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'], // Black pawns
+        ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'wp', 'bp'], // Black pawns
         [null, null, null, null, null, null, null, null], // Empty squares
         [null, null, null, null, null, null, null, null],
         [null, null, null, null, null, null, null, null],
@@ -49,11 +50,14 @@ const initialState = {
         }
     }
 }
+const initialPromoteState = {show: false, row: null, col: null, toRow: null, toCol: null};
 export default function () {
 
     const [gameState, setGameState] = useState(initialState);
     const [showModal, setShowModal] = useState(false);
     const [modalMessage, setModalMessage] = useState('');
+    const [showPromote, setShowPromote] = useState(initialPromoteState);
+
 
     function resetSquares() {
         setGameState({
@@ -81,6 +85,10 @@ export default function () {
         const pieceColor = piece[0];
         const pieceType = piece[1];
 
+        //promoting
+        if(pieceType === 'p' && isPawnPromoting(fromRow, pieceColor)){
+            return setShowPromote({show: true, row: fromRow, col: fromCol, toRow, toCol});
+        }
         const movedWithValidColor = piece[0] === gameState.turn[0];
         if (!movedWithValidColor) return;
 
@@ -92,15 +100,7 @@ export default function () {
         updatedCastleRuined.big[pieceColor] = updatedCastleRuined.big[pieceColor] || bigCastleRuined;
 
         const newBoard = movePiece(gameState.board, gameState.selectedPiece.row, gameState.selectedPiece.col, toRow, toCol, fromCol - toCol === -2, fromCol - toCol === 2);
-        //castling logic
-        // if(pieceType === 'k'){
-        //     if (!castleRuined && Math.abs(fromRow - toCol) === 2){
-        //         newBoard = movePiece(gameState.board, toRow, 7, toRow, 5, false);
-        //     }
-        //     else if(!bigCastleRuined && Math.abs(fromRow - toCol) === 3) {
-        //         newBoard = movePiece(gameState.board, toRow, 0, toRow, 2, false);
-        //     }
-        // }
+
         setGameState(prevState => ({
             ...prevState,
             board: [...newBoard],
@@ -116,6 +116,22 @@ export default function () {
         return true;
 
 
+    }
+    function promotePiece(piece){
+        
+        const selectedRow = showPromote.row;
+        const selectedCol = showPromote.col;
+        if(!selectedRow || !selectedCol) return;
+        
+        const newBoard = movePiece(gameState.board, selectedRow ,selectedCol, showPromote.toRow, showPromote.toCol);
+        newBoard[showPromote.toRow][showPromote.toCol] = piece;
+        setGameState(gt => ({...gt, board: newBoard, selectedPiece: {
+            row: null,
+            col: null,
+            piece: null,
+            possibleMoves: null
+        }, turn: getOppositeColor(gt.turn[0])}))
+        setShowPromote(initialPromoteState);
     }
     function setSelected(row, col) {
 
@@ -235,6 +251,7 @@ export default function () {
                 message={modalMessage}
                 onClose={() => setShowModal(false)} // Close modal on button click
             />
+            <Promote show={showPromote.show} title={"Promote: "} color={gameState.turn[0]} onClose={() => setShowPromote(initialPromoteState)} promote={promotePiece}/>
         </>
     )
 }

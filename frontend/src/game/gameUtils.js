@@ -28,8 +28,12 @@ export function movePiece(board, fromRow, fromCol, toRow, toCol, smallCastle = f
 
     return newBoard;
 }
+export function isPawnPromoting(row, color) {
+    return (color === 'w' && row === 1) || (color === 'b' && row === 6)
+
+}
 export function getDiagonalPawnCaptures(row, col, color) {
-    if (color === 'w') {
+    if (color === 'w' && row > 0) {
         return [
             {
                 row: row - 1,
@@ -42,16 +46,20 @@ export function getDiagonalPawnCaptures(row, col, color) {
         ]
     }
     else {
-        return [
-            {
-                row: row + 1,
-                col: col + 1
-            },
-            {
-                row: row + 1,
-                col: col - 1
-            }
-        ]
+        if (row < 7) {
+            return [
+                {
+                    row: row + 1,
+                    col: col + 1
+                },
+                {
+                    row: row + 1,
+                    col: col - 1
+                }
+            ]
+        }
+
     }
+    return [];
 }
 

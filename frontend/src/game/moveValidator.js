@@ -63,7 +63,8 @@ export function getQueenMoves(board, row, col) {
 }
 export function getPawnMoves(board, row, col, color) {
     const points = []
-    if (color === 'b' && isPathClear(board, row, col, row + 1, col)) {
+
+    if (color === 'b' && isPathClear(board, row, col, row + 1, col) && row < 7) {
         points.push({
             row: row + 1,
             col: col
@@ -75,7 +76,7 @@ export function getPawnMoves(board, row, col, color) {
             })
         }
     }
-    else if (isPathClear(board, row, col, row - 1, col)){
+    else if (isPathClear(board, row, col, row - 1, col) && row > 0) {
         points.push({
             row: row - 1,
             col: col
@@ -86,6 +87,7 @@ export function getPawnMoves(board, row, col, color) {
                 col: col
             })
         }
+
     }
     return points;
 }
