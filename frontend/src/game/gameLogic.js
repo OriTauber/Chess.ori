@@ -1,6 +1,6 @@
 import {
     getDiagonals, getKnightMoves, getKingMoves, getQueenMoves,
-    getRookMoves, getPawnMoves, isPointValidated, getAllMoveTypes, isPathClear,
+    getRookMoves, getPawnMoves, isPointValidated, getAllMoveTypes,
     validatePoint
 } from "../game/moveValidator";
 import { movePiece, getDiagonalPawnCaptures } from "../game/gameUtils";
@@ -121,7 +121,7 @@ function getPathToKing(checkingPiece, kingPosition) {
     while ((row !== kingRow || col !== kingCol) && (row !== checkingPiece.row || col !== checkingPiece.col));
     return path;
 }
-function handleKingCastling(kingMoves, smCastleRuined = true, bigCastleRuined = true, row, col){
+function handleKingCastling(board, kingMoves, smCastleRuined = true, bigCastleRuined = true, row, col){
     if (!smCastleRuined) {
         kingMoves.push({
             row,
@@ -132,11 +132,31 @@ function handleKingCastling(kingMoves, smCastleRuined = true, bigCastleRuined = 
     if (!bigCastleRuined) {
         kingMoves.push({
             row,
-            col: col - 3,
+            col: col - 2,
             bigcastle: true
         })
     }
-    return kingMoves;
+    return kingMoves.filter(pt => {
+        return isPathClear(board, row, col, pt.row, pt.col);
+    });
+}
+export function isPathClear(board, fromRow, fromCol, toRow, toCol) {
+    const rowIncrement = Math.sign(toRow - fromRow);
+    const colIncrement = Math.sign(toCol - fromCol);
+
+    let currentRow = fromRow + rowIncrement;
+    let currentCol = fromCol + colIncrement;
+
+    while (currentRow !== toRow || currentCol !== toCol) {
+        if (board[currentRow][currentCol]) {
+            return false;
+        }
+        currentRow += rowIncrement;
+        currentCol += colIncrement;
+        if (currentRow >= 8 || currentCol >= 8 || currentRow <= 0 || currentCol <= 0) break;
+    }
+
+    return true;
 }
 export function getMovesForPiece(board, row, col, piece, color, castledRuined , includeCheckMoves = false) {
     switch (piece[1]) {
@@ -157,8 +177,8 @@ export function getMovesForPiece(board, row, col, piece, color, castledRuined , 
             const smCastleRuined = castledRuined.small[color]
             const bigCastleRuined = castledRuined.big[color]
 
-            return includeCheckMoves ? handleKingCastling(getKingMoves(row, col), smCastleRuined, bigCastleRuined, row, col) :
-                filterOwnCapturesAndPins(board, row, col, handleKingCastling(getKingMoves(row, col), smCastleRuined, bigCastleRuined, row, col), color, castledRuined);
+            return includeCheckMoves ? handleKingCastling(board, getKingMoves(row, col), smCastleRuined, bigCastleRuined, row, col) :
+                filterOwnCapturesAndPins(board, row, col, handleKingCastling(board, getKingMoves(row, col), smCastleRuined, bigCastleRuined, row, col), color, castledRuined);
         case 'r':
             return includeCheckMoves ? getRookMoves(board, row, col) : filterOwnCapturesAndPins(board, row, col, getRookMoves(board, row, col), color, castledRuined);
         default:

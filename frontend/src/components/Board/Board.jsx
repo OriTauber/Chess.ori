@@ -3,7 +3,7 @@ import Square from "./Square"
 
 import { useEffect, useMemo } from "react";
 import { isPointValidated } from "../../game/moveValidator";
-export default function Board({ gameState, setSelected  }) {
+export default function Board({ gameState, setSelected, isSquareInCheck, isSquareInMate }) {
     useEffect(() => {
         
 
@@ -11,16 +11,8 @@ export default function Board({ gameState, setSelected  }) {
 
     const possibleMoves = gameState.selectedPiece.possibleMoves;
     
-    const isSquareInCheck = (row, col) => {
-        if(!gameState.status.includes('check')) return false;
-        const position = gameState.status.split('-');
-        const points = position[2].split(';');
-        const checkRow = parseInt(points[0]);
-        const checkCol = parseInt(points[1])
-        return (points && (checkRow === row && checkCol === col));
 
-    }
-    console.log(isSquareInCheck(0, 4))
+    console.log()
     return useMemo(() => (
         
         <div className="Board">
@@ -38,10 +30,11 @@ export default function Board({ gameState, setSelected  }) {
                             possibleMove={isPointValidated({row: rowIndex, col: colIndex},possibleMoves)}
                             //w-check-4;5
                             inCheck={isSquareInCheck(rowIndex, colIndex)}
+                            inMate={isSquareInMate(rowIndex, colIndex)}
                         />
                     )})
 
             ))}
         </div>
-    ), [gameState.board, gameState.selectedPiece]);
+    ), [gameState.board, gameState.selectedPiece, gameState.status]);
 }

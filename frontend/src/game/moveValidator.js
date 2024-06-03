@@ -1,4 +1,7 @@
 //returns all points that follow a specific rule
+
+import { isPathClear } from "./gameLogic";
+
 /*{
     row: x,
     col: y
@@ -13,24 +16,7 @@ function getPlusMinus(row, col, plusRow, plusCol) {
     ];
     return points.filter(point => validatePoint(point));
 }
-export function isPathClear(board, fromRow, fromCol, toRow, toCol) {
-    const rowIncrement = Math.sign(toRow - fromRow);
-    const colIncrement = Math.sign(toCol - fromCol);
 
-    let currentRow = fromRow + rowIncrement;
-    let currentCol = fromCol + colIncrement;
-
-    while (currentRow !== toRow || currentCol !== toCol) {
-        if (board[currentRow][currentCol]) {
-            return false;
-        }
-        currentRow += rowIncrement;
-        currentCol += colIncrement;
-        if (currentRow >= 8 || currentCol >= 8 || currentRow <= 0 || currentCol <= 0) break;
-    }
-
-    return true;
-}
 
 function getAdjacent(row, col) {
     const points = [
