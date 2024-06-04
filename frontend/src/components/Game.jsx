@@ -16,8 +16,8 @@ import Promote from "./Promote";
 
 const initialState = {
     board: [
-        ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'], // Black pieces
-        ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'wp', 'bp'], // Black pawns
+        ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'wq'], // Black pieces
+        ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', '', 'bp'], // Black pawns
         [null, null, null, null, null, null, null, null], // Empty squares
         [null, null, null, null, null, null, null, null],
         [null, null, null, null, null, null, null, null],
@@ -25,7 +25,7 @@ const initialState = {
         ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'], // White pawns
         ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']  // White pieces
     ],
-    turn: 'white',
+    turn: 'black',
     status: 'beforestart',
     clock: {
         white: 300,
@@ -147,8 +147,26 @@ export default function () {
         }
         else {
             if (isAnySquareSelected(gameState.selectedPiece)) {
+                
+                const piece = gameState.board[row][col];
+                
+                if(piece && piece[0] === gameState.selectedPiece.piece[0]){
+                    console.log("AAAasd")
+                    setGameState(gt => {
 
-                return handleMovePiece(row, col);
+                        return {
+                            ...gt, selectedPiece: {
+                                row,
+                                col,
+                                piece,
+                                possibleMoves: getMovesForPiece(gt.board, row, col, piece, piece[0], gt.castleRuined)
+                            }
+                        }
+                    })
+                }
+                else{
+                    return handleMovePiece(row, col);
+                }
             }
             else {
 

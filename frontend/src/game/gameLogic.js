@@ -19,39 +19,32 @@ export function getOppositeColor(color) {
     return color === 'w' ? 'b' : 'w';
 }
 
-export function pointsToCaptureInList(board, points, attackingColor, castledRuined) {
-    const validatedPoints = [];
-    if(!points || points.length === 0) return validatePoint;
-    for (let point of points) {
-        
+export function pointsToCaptureInList(board, points, attackingColor) {
+    if (!points || points.length === 0) return [];
+    return points.filter(point => {
         const piece = board[point.row][point.col];
-        if (piece && piece[0] !== attackingColor) {
-            validatedPoints.push(point);
-        }
-    }
-    return validatedPoints;
+        return piece && piece[0] !== attackingColor;
+    });
 }
 
 export function filterPawnOverride(board, points) {
-    
-    return points.filter((point) => 
-        !board[point.row][point.col]
-    );
+    return points.filter(point => !board[point.row][point.col]);
 }
 
-export function filterOwnCapturesAndPins(board, fromRow, fromCol, points, attackingColor, castledRuined) {
-    const validatedPoints = [];
-    for (let point of points) {
-        const piece = board[point.row][point.col];
-        if (!piece || piece[0] !== attackingColor) {
-            console.log(point)
-            if (isMoveLegal(board, fromRow, fromCol, point.row, point.col, attackingColor, castledRuined)) {
-                validatedPoints.push(point);
-            }
-        }
+export function filterOwnCapturesAndPins(board, fromRow, fromCol, points, attackingColor, castledRuined, depth = 0) {
+    if (depth > 10) { // Arbitrary depth limit to avoid infinite recursion
+        console.warn('Recursion depth exceeded');
+        return [];
     }
-    return validatedPoints;
+
+    return points.filter(point => {
+        const piece = board[point.row][point.col];
+        const isLegal = isMoveLegal(board, fromRow, fromCol, point.row, point.col, attackingColor, castledRuined);
+        console.log(`Depth: ${depth} - Checking move from (${fromRow}, ${fromCol}) to (${point.row}, ${point.col}): ${isLegal}`);
+        return (!piece || piece[0] !== attackingColor) && isLegal;
+    });
 }
+
 export function getAllPieces(board, color) {
     const pieces = [];
     for (let row = 0; row < 8; row++) {
@@ -64,16 +57,15 @@ export function getAllPieces(board, color) {
     }
     return pieces;
 }
+
 export function canCaptureCheckingPiece(board, color, checkingPieces, castledRuined) {
     const pieces = getAllPieces(board, color);
     for (let { row, col, piece } of pieces) {
         const moves = getMovesForPiece(board, row, col, piece, color, castledRuined);
         for (let move of moves) {
             for (let checkingPiece of checkingPieces) {
-                if (move.row === checkingPiece.row && move.col === checkingPiece.col) {
-                    if (isMoveLegal(board, row, col, move.row, move.col, color, castledRuined)) {
-                        return true;
-                    }
+                if (move.row === checkingPiece.row && move.col === checkingPiece.col && isMoveLegal(board, row, col, move.row, move.col, color, castledRuined)) {
+                    return true;
                 }
             }
         }
@@ -83,66 +75,43 @@ export function canCaptureCheckingPiece(board, color, checkingPieces, castledRui
 
 export function canBlockCheck(board, color, checkingPieces, kingPosition, castledRuined) {
     if (checkingPieces.length > 1) return false; // More than one check means the check cannot be blocked
-    const [kingRow, kingCol] = kingPosition;
-    const checkingPiece = checkingPieces[0];
-    
-    const path = getPathToKing(checkingPiece, kingPosition);
 
-
+    const path = getPathToKing(checkingPieces[0], kingPosition);
     const pieces = getAllPieces(board, color);
 
     for (let { row, col, piece } of pieces) {
         const moves = getMovesForPiece(board, row, col, piece, color, castledRuined);
-        
-        for (let move of moves) {
-            if (path.some(p => p.row === move.row && p.col === move.col)) {
- 
-                if (isMoveLegal(board, row, col, move.row, move.col, color, castledRuined)) {
-                    return true;
-                }
-            }
+        if (moves.some(move => path.some(p => p.row === move.row && p.col === move.col) && isMoveLegal(board, row, col, move.row, move.col, color, castledRuined))) {
+            return true;
         }
     }
     return false;
 }
 
-// Helper function to get the path from a checking piece to the king
-
-
-// Helper function to get the path from a checking piece to the king
 function getPathToKing(checkingPiece, kingPosition) {
     const [kingRow, kingCol] = kingPosition;
     const path = [];
     let [row, col] = [checkingPiece.row, checkingPiece.col];
     const rowStep = Math.sign(kingRow - row);
     const colStep = Math.sign(kingCol - col);
-    do{
+    do {
         row += rowStep;
         col += colStep;
         path.push({ row, col });
-    }
-    while ((row !== kingRow || col !== kingCol) && (row !== checkingPiece.row || col !== checkingPiece.col));
+    } while (row !== kingRow || col !== kingCol);
     return path;
 }
-function handleKingCastling(board, kingMoves, smCastleRuined = true, bigCastleRuined = true, row, col){
+
+function handleKingCastling(board, kingMoves, smCastleRuined = true, bigCastleRuined = true, row, col) {
     if (!smCastleRuined) {
-        kingMoves.push({
-            row,
-            col: col + 2,
-            smcastle: true
-        })
+        kingMoves.push({ row, col: col + 2, smcastle: true });
     }
     if (!bigCastleRuined) {
-        kingMoves.push({
-            row,
-            col: col - 2,
-            bigcastle: true
-        })
+        kingMoves.push({ row, col: col - 2, bigcastle: true });
     }
-    return kingMoves.filter(pt => {
-        return isPathClear(board, row, col, pt.row, pt.col);
-    });
+    return kingMoves.filter(pt => isPathClear(board, row, col, pt.row, pt.col));
 }
+
 export function isPathClear(board, fromRow, fromCol, toRow, toCol) {
     const rowIncrement = Math.sign(toRow - fromRow);
     const colIncrement = Math.sign(toCol - fromCol);
@@ -156,43 +125,58 @@ export function isPathClear(board, fromRow, fromCol, toRow, toCol) {
         }
         currentRow += rowIncrement;
         currentCol += colIncrement;
-        if (currentRow >= 8 || currentCol >= 8 || currentRow <= 0 || currentCol <= 0) break;
     }
 
     return true;
 }
-export function getMovesForPiece(board, row, col, piece, color, castledRuined , includeCheckMoves = false) {
+
+export function getMovesForPiece(board, row, col, piece, color, castledRuined, includeCheckMoves = false) {
+    let moves;
     switch (piece[1]) {
         case 'p': {
             const captures = getDiagonalPawnCaptures(row, col, color);
             const captureList = pointsToCaptureInList(board, captures, color);
             const validMoves = filterPawnOverride(board, getPawnMoves(board, row, col, color));
-            return includeCheckMoves ? validMoves.concat(captureList) : filterOwnCapturesAndPins(board, row, col, validMoves.concat(captureList), color, castledRuined);
+            moves = includeCheckMoves ? validMoves.concat(captureList) : filterOwnCapturesAndPins(board, row, col, validMoves.concat(captureList), color, castledRuined);
+            break;
         }
         case 'n':
-            return includeCheckMoves ? getKnightMoves(row, col) : filterOwnCapturesAndPins(board, row, col, getKnightMoves(row, col), color, castledRuined);
+            moves = includeCheckMoves ? getKnightMoves(row, col) : filterOwnCapturesAndPins(board, row, col, getKnightMoves(row, col), color, castledRuined);
+            break;
         case 'b':
-            return includeCheckMoves ? getDiagonals(board, row, col) : filterOwnCapturesAndPins(board, row, col, getDiagonals(board, row, col), color, castledRuined);
+            moves = includeCheckMoves ? getDiagonals(board, row, col) : filterOwnCapturesAndPins(board, row, col, getDiagonals(board, row, col), color, castledRuined);
+            break;
         case 'q':
-            return includeCheckMoves ? getQueenMoves(board, row, col) : filterOwnCapturesAndPins(board, row, col, getQueenMoves(board, row, col), color, castledRuined);
+            moves = includeCheckMoves ? getQueenMoves(board, row, col) : filterOwnCapturesAndPins(board, row, col, getQueenMoves(board, row, col), color, castledRuined);
+            break;
         case 'k':
-
-            const smCastleRuined = castledRuined.small[color]
-            const bigCastleRuined = castledRuined.big[color]
-
-            return includeCheckMoves ? handleKingCastling(board, getKingMoves(row, col), smCastleRuined, bigCastleRuined, row, col) :
+            const smCastleRuined = castledRuined.small[color];
+            const bigCastleRuined = castledRuined.big[color];
+            moves = includeCheckMoves ? handleKingCastling(board, getKingMoves(row, col), smCastleRuined, bigCastleRuined, row, col) :
                 filterOwnCapturesAndPins(board, row, col, handleKingCastling(board, getKingMoves(row, col), smCastleRuined, bigCastleRuined, row, col), color, castledRuined);
+            break;
         case 'r':
-            return includeCheckMoves ? getRookMoves(board, row, col) : filterOwnCapturesAndPins(board, row, col, getRookMoves(board, row, col), color, castledRuined);
+            moves = includeCheckMoves ? getRookMoves(board, row, col) : filterOwnCapturesAndPins(board, row, col, getRookMoves(board, row, col), color, castledRuined);
+            break;
         default:
-            return [];
+            moves = [];
     }
+    return moves;
 }
 
+function isSquareAttacked(board, row, col, attackerColor) {
+    const attackingPieces = getAllPieces(board, attackerColor);
+    return attackingPieces.some(({ row: attackerRow, col: attackerCol, piece }) => {
+        const movesForPiece = getMovesForPiece(board, attackerRow, attackerCol, piece, attackerColor, {}, true);
+        return movesForPiece.some(move => move.row === row && move.col === col);
+    });
+}
 
 export function isMoveLegal(board, fromRow, fromCol, toRow, toCol, color, castledRuined) {
     const newBoard = makeMove(board, fromRow, fromCol, toRow, toCol);
-    return !isInCheck(newBoard, color, castledRuined);
+    const inCheck = isInCheck(newBoard, color, castledRuined);
+    console.log(`Move from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol}) results in check: ${inCheck}`);
+    return !inCheck;
 }
 
 export function makeMove(board, fromRow, fromCol, toRow, toCol) {
@@ -223,27 +207,25 @@ export function isInCheck(board, color, castledRuined) {
     const oppositeColor = getOppositeColor(color);
 
     // Get all opponent pieces
-    const opponentPieces = [];
-
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            const piece = board[row][col];
-            if (piece && piece[0] === oppositeColor) {
-                opponentPieces.push({ row, col, piece });
-            }
-        }
-    }
+    const opponentPieces = getAllPieces(board, oppositeColor);
 
     // Check if any opponent piece has a move targeting the king
-    for (let { row, col, piece } of opponentPieces) {
+    return opponentPieces.some(({ row, col, piece }) => {
         const movesForPiece = getMovesForPiece(board, row, col, piece, oppositeColor, castledRuined, true);
-        for (let move of movesForPiece) {
-            if (move.row === kingRow && move.col === kingCol) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+        return movesForPiece.some(move => move.row === kingRow && move.col === kingCol);
+    });
 }
 
+
+function isKingInCheckAfterMove(board, moveFromRow, moveFromCol, moveToRow, moveToCol, color, castledRuined) {
+    const newBoard = makeMove(board, moveFromRow, moveFromCol, moveToRow, moveToCol, true);
+    const [kingRow, kingCol] = getKingPosition(newBoard, color);
+    const oppositeColor = getOppositeColor(color);
+
+    const opponentPieces = getAllPieces(newBoard, oppositeColor);
+    if(opponentPieces.length === 0) return false;
+    return opponentPieces.some(({ row, col, piece }) => {
+        const movesForPiece = getMovesForPiece(newBoard, row, col, piece, oppositeColor, castledRuined, false);
+        return movesForPiece.some(move => move.row === kingRow && move.col === kingCol);
+    });
+}
