@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import Game from './components/Game'
-import Modal from './components/Modal'
-import Promote from './components/Promote'
+import React from 'react';
 
-function App() {
-  
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
+import Game from './components/Game';
+import JoinMenu from './components/JoinMenu';
+
+export default function App() {
   return (
-    <>
-      <Game/>
-    </>
-  )
-}
+    <Router>
+      <Routes>
+        <Route path="/join" Component={JoinMenu}/>
 
-export default App
+        <Route path="/play/:room" Component={Game}/>
+
+      </Routes>
+    </Router>
+  );
+}

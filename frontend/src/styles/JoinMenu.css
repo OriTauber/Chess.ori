@@ -1,0 +1,17 @@
+
+.JoinMenu{
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+    
+}
+.JoinMenu .container{
+    background-color: black;
+    border: 1px solid black;
+    width: 300px;
+    height: 200px;
+}
+input{
+    padding: 5px;
+}

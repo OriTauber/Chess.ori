@@ -1,23 +1,24 @@
-import { useEffect, useState } from "react";
+// src/components/Game.js
+import React, { useEffect, useState } from "react";
 import Board from "./Board/Board";
-import { movePiece, getDiagonalPawnCaptures, isPawnPromoting } from "../game/gameUtils"
+import { movePiece, getDiagonalPawnCaptures, isPawnPromoting } from "../game/gameUtils";
 import { getKingMoves, isPointValidated } from "../game/moveValidator";
-
 import {
     getKingPosition, getOppositeColor, pointsToCaptureInList, filterPawnOverride, filterOwnCapturesAndPins, getMovesForPiece,
     isMoveLegal, makeMove, getPiece, squareOccupied, isSquareSelected, isAnySquareSelected, isInCheck,
-    getAllPieces,
-    canCaptureCheckingPiece,
-    canBlockCheck
-} from '../game/gameLogic'
+    getAllPieces, canCaptureCheckingPiece, canBlockCheck
+} from '../game/gameLogic';
 import soundManager from "../game/soundManager";
 import Modal from "./Modal";
 import Promote from "./Promote";
+import Clock from "./Clock/Clock";
+import { useWebSocket } from '../context/WebSocketContext';
+import '../styles/Game.css';
 
 const initialState = {
     board: [
-        ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'wq'], // Black pieces
-        ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', '', 'bp'], // Black pawns
+        ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'], // Black pieces
+        ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'wp', 'bp'], // Black pawns
         [null, null, null, null, null, null, null, null], // Empty squares
         [null, null, null, null, null, null, null, null],
         [null, null, null, null, null, null, null, null],
@@ -25,19 +26,18 @@ const initialState = {
         ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'], // White pawns
         ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']  // White pieces
     ],
-    turn: 'black',
+    turn: 'w',
     status: 'beforestart',
     clock: {
-        white: 300,
-        black: 300
+        w: 300,
+        b: 300,
+        status: 'playing'
     },
     selectedPiece: {
         row: null,
         col: null,
         piece: null,
-        possibleMoves: [
-
-        ]
+        possibleMoves: []
     },
     castleRuined: {
         small: {
@@ -48,32 +48,89 @@ const initialState = {
             b: false,
             w: false
         }
-    }
-}
-const initialPromoteState = {show: false, row: null, col: null, toRow: null, toCol: null};
-export default function () {
+    },
+    disabled: false
+};
+
+const initialPromoteState = { show: false, row: null, col: null, toRow: null, toCol: null };
+
+export default function Game() {
+    const ws = useWebSocket();
 
     const [gameState, setGameState] = useState(initialState);
     const [showModal, setShowModal] = useState(false);
+    const [playerColor, setPlayerColor] = useState(null);
     const [modalMessage, setModalMessage] = useState('');
     const [showPromote, setShowPromote] = useState(initialPromoteState);
+    useEffect(() => {
+        
+        if (!ws) return;
+        
+        ws.onmessage = event => {
+            const message = JSON.parse(event.data);
+            console.log("Received message:", message);
 
+            // Handle message type
+            switch (message.type) {
+                case 'color':
+                    setPlayerColor(message.color);
 
-    function resetSquares() {
-        setGameState({
-            ...gameState, selectedPiece: {
+                    break;
+                case 'move':
+                    
+                    handleMoveMessage(message);
+                    break;
+                case 'start':
+                    
+                    handleStartMessage();
+                    break;
+                // Add other message types as needed
+                default:
+                    break;
+            }
+        };
+
+        return () => {
+            ws.onmessage = null; // Cleanup
+        };
+    }, [ws]);
+
+    const handleMoveMessage = (message) => {
+        setGameState(prevState => ({
+            ...prevState,
+            board: message.board,
+            turn: message.turn,
+            selectedPiece: {
                 row: null,
                 col: null,
                 piece: null,
-                possibleMoves: null
+                possibleMoves: []
             }
-        })
-    }
+        }));
+    };
 
+    const handleStartMessage = () => {
+        setGameState(prevState => ({
+            ...prevState,
+            disabled: false
+        }));
+    };
 
+    const resetSquares = () => {
+        setGameState(prevState => ({
+            ...prevState,
+            selectedPiece: {
+                row: null,
+                col: null,
+                piece: null,
+                possibleMoves: []
+            }
+        }));
+    };
 
-    function handleMovePiece(toRow, toCol) {
-
+    const handleMovePiece = (toRow, toCol) => {
+        
+        if (gameState.disabled) return false;
         const fromRow = gameState.selectedPiece.row;
         const fromCol = gameState.selectedPiece.col;
 
@@ -83,138 +140,153 @@ export default function () {
         if (!piece) return false;
 
         const pieceColor = piece[0];
+        if (!pieceColor === playerColor) return;
         const pieceType = piece[1];
 
-        //promoting
-        if(pieceType === 'p' && isPawnPromoting(fromRow, pieceColor)){
-            return setShowPromote({show: true, row: fromRow, col: fromCol, toRow, toCol});
+        // Promoting
+        if (pieceType === 'p' && isPawnPromoting(toRow, pieceColor)) {
+            return setShowPromote({ show: true, row: fromRow, col: fromCol, toRow, toCol });
         }
-        const movedWithValidColor = piece[0] === gameState.turn[0];
+
+        const movedWithValidColor = pieceColor === gameState.turn;
         if (!movedWithValidColor) return;
 
-
-        const castleRuined = (pieceType === 'k' || (pieceType === 'r' && fromCol === 7)) && !gameState.castleRuined.small[pieceColor];
+        const smallCastleRuined = (pieceType === 'k' || (pieceType === 'r' && fromCol === 7)) && !gameState.castleRuined.small[pieceColor];
         const bigCastleRuined = (pieceType === 'k' || (pieceType === 'r' && fromCol === 0)) && !gameState.castleRuined.big[pieceColor];
         const updatedCastleRuined = { ...gameState.castleRuined };
-        updatedCastleRuined.small[pieceColor] = updatedCastleRuined.small[pieceColor] || castleRuined;
+        updatedCastleRuined.small[pieceColor] = updatedCastleRuined.small[pieceColor] || smallCastleRuined;
         updatedCastleRuined.big[pieceColor] = updatedCastleRuined.big[pieceColor] || bigCastleRuined;
 
-        const newBoard = movePiece(gameState.board, gameState.selectedPiece.row, gameState.selectedPiece.col, toRow, toCol, fromCol - toCol === -2, fromCol - toCol === 2);
+        const newBoard = movePiece(gameState.board, fromRow, fromCol, toRow, toCol, fromCol - toCol === -2, fromCol - toCol === 2);
 
+
+
+        // Send move to server
+        ws.send(JSON.stringify({
+            type: 'move',
+            roomId: "t", // Make sure you have a gameId in your gameState
+            from: { row: fromRow, col: fromCol },
+            to: { row: toRow, col: toCol },
+            board: newBoard,
+            turn: gameState.turn === 'w' ? 'b' : 'w',
+        }));
         setGameState(prevState => ({
             ...prevState,
-            board: [...newBoard],
-            turn: prevState.turn === 'white' ? 'black' : 'white',
+            board: newBoard,
+            turn: prevState.turn === 'w' ? 'b' : 'w',
             selectedPiece: {
                 row: null,
                 col: null,
                 piece: null,
-                possibleMoves: null,
+                possibleMoves: []
             },
             castleRuined: updatedCastleRuined
         }));
         return true;
+    };
 
+    const promotePiece = piece => {
+        
+        if (gameState.disabled) return;
+        const { row: selectedRow, col: selectedCol, toRow, toCol } = showPromote;
+        if (selectedRow === null || selectedCol === null) return;
 
-    }
-    function promotePiece(piece){
-        
-        const selectedRow = showPromote.row;
-        const selectedCol = showPromote.col;
-        if(!selectedRow || !selectedCol) return;
-        
-        const newBoard = movePiece(gameState.board, selectedRow ,selectedCol, showPromote.toRow, showPromote.toCol);
-        newBoard[showPromote.toRow][showPromote.toCol] = piece;
-        setGameState(gt => ({...gt, board: newBoard, selectedPiece: {
-            row: null,
-            col: null,
-            piece: null,
-            possibleMoves: null
-        }, turn: getOppositeColor(gt.turn[0])}))
+        const newBoard = movePiece(gameState.board, selectedRow, selectedCol, toRow, toCol);
+        newBoard[toRow][toCol] = piece;
+
+        setGameState(prevState => ({
+            ...prevState,
+            board: newBoard,
+            selectedPiece: {
+                row: null,
+                col: null,
+                piece: null,
+                possibleMoves: []
+            },
+            turn: getOppositeColor(prevState.turn)
+        }));
+
         setShowPromote(initialPromoteState);
-    }
-    function setSelected(row, col) {
+    };
+
+    const onTimeEnd = color => {
+        if (gameState.turn === color) {
+            setModalMessage(`${color} lost by time!. ${getOppositeColor(color)} wins!`);
+            setShowModal(true);
+            setGameState(prevState => ({
+                ...prevState,
+                status: gameState.clock.status,
+                disabled: true
+            }));
+            return;
+        }
+    };
+
+    const setSelected = (row, col) => {
+
+        if (gameState.disabled) return;
 
         if (isSquareSelected(gameState.selectedPiece, row, col)) {
-            setGameState({
-                ...gameState, selectedPiece: {
-                    row: null,
-                    col: null,
-                    piece: null,
-                    possibleMoves: null
-                }
-            })
-        }
-        else {
+            resetSquares();
+        } else {
             if (isAnySquareSelected(gameState.selectedPiece)) {
-                
                 const piece = gameState.board[row][col];
                 
-                if(piece && piece[0] === gameState.selectedPiece.piece[0]){
-                    console.log("AAAasd")
-                    setGameState(gt => {
-
-                        return {
-                            ...gt, selectedPiece: {
-                                row,
-                                col,
-                                piece,
-                                possibleMoves: getMovesForPiece(gt.board, row, col, piece, piece[0], gt.castleRuined)
-                            }
-                        }
-                    })
-                }
-                else{
-                    return handleMovePiece(row, col);
-                }
-            }
-            else {
-
-                const movedPiece = gameState.board[row][col];
-
-                if (!movedPiece) return;
-                const color = movedPiece[0] || 'w'
-
-                if (color !== gameState.turn[0]) return;
-
-                setGameState(gt => {
-
-                    return {
-                        ...gt, selectedPiece: {
+                if (piece && piece[0] === gameState.selectedPiece.piece[0]) {
+                    setGameState(prevState => ({
+                        ...prevState,
+                        selectedPiece: {
                             row,
                             col,
-                            piece: movedPiece,
-                            possibleMoves: getMovesForPiece(gt.board, row, col, movedPiece, color, gt.castleRuined)
+                            piece,
+                            possibleMoves: getMovesForPiece(prevState.board, row, col, piece, piece[0], prevState.castleRuined)
                         }
+                    }));
+                } else {
+                    handleMovePiece(row, col);
+                }
+            } else {
+                const movedPiece = gameState.board[row][col];
+                if (!movedPiece) return;
+
+                const color = movedPiece[0] || 'w';
+                if (color !== gameState.turn || color !== playerColor) return;
+
+                setGameState(prevState => ({
+                    ...prevState,
+                    selectedPiece: {
+                        row,
+                        col,
+                        piece: movedPiece,
+                        possibleMoves: getMovesForPiece(prevState.board, row, col, movedPiece, color, prevState.castleRuined)
                     }
-                })
+                }));
                 return true;
             }
-
         }
         return false;
-    }
+    };
+
+
     useEffect(() => {
-        //checks and mates!
-        //also SFX
-        const color = gameState.turn[0];
+        // Checks and mates, SFX
+        const color = gameState.turn;
         const inCheck = isInCheck(gameState.board, color, gameState.castleRuined);
-        const castledRuined = gameState.castleRuined;
 
         if (inCheck) {
-            soundManager.playSound('check')
+            soundManager.playSound('check');
             const kingPosition = getKingPosition(gameState.board, color);
             const kingMoves = getKingMoves(kingPosition[0], kingPosition[1]);
             const validKingMoves = filterOwnCapturesAndPins(gameState.board, kingPosition[0], kingPosition[1], kingMoves, color, gameState.castleRuined);
 
             const opponentColor = getOppositeColor(color);
             const checkingPieces = getAllPieces(gameState.board, opponentColor).filter(({ row, col, piece }) => {
-                const moves = getMovesForPiece(gameState.board, row, col, piece, opponentColor, castledRuined);
+                const moves = getMovesForPiece(gameState.board, row, col, piece, opponentColor, gameState.castleRuined);
                 return moves.some(move => move.row === kingPosition[0] && move.col === kingPosition[1]);
             });
 
-            const canCapture = canCaptureCheckingPiece(gameState.board, color, checkingPieces, castledRuined);
-            const canBlock = canBlockCheck(gameState.board, color, checkingPieces, kingPosition, castledRuined);
+            const canCapture = canCaptureCheckingPiece(gameState.board, color, checkingPieces, gameState.castleRuined);
+            const canBlock = canBlockCheck(gameState.board, color, checkingPieces, kingPosition, gameState.castleRuined);
 
             const isCheckmate = validKingMoves.length === 0 && !canCapture && !canBlock;
 
@@ -223,16 +295,19 @@ export default function () {
                 setShowModal(true);
                 setGameState(prevState => ({
                     ...prevState,
-                    status: `${color}-mate-${kingPosition[0]};${kingPosition[1]}`
+                    status: `${color}-mate-${kingPosition[0]};${kingPosition[1]}`,
+                    disabled: true
                 }));
-            } else {
+            }
+
+            else {
                 setGameState(prevState => ({
                     ...prevState,
                     status: `${color}-check-${kingPosition[0]};${kingPosition[1]}`
                 }));
             }
         } else {
-            soundManager.playSound('move')
+            soundManager.playSound('move');
             setGameState(prevState => ({
                 ...prevState,
                 status: 'inprogress'
@@ -242,34 +317,43 @@ export default function () {
 
     const isSquareInCheck = (row, col) => {
         if (!gameState.status.includes('check')) return false;
-        const position = gameState.status.split('-');
-        const points = position[2].split(';');
-        const checkRow = parseInt(points[0]);
-        const checkCol = parseInt(points[1])
-        return (points && (checkRow === row && checkCol === col))
+        const [, , position] = gameState.status.split('-');
+        const [checkRow, checkCol] = position.split(';').map(Number);
+        return row === checkRow && col === checkCol;
+    };
 
-    }
     const isSquareInMate = (row, col) => {
         if (!gameState.status.includes('mate')) return false;
+        const [, , position] = gameState.status.split('-');
+        const [mateRow, mateCol] = position.split(';').map(Number);
+        return row === mateRow && col === mateCol;
+    };
 
-        const position = gameState.status.split('-');
-        const points = position[2].split(';');
-        const mateRow = parseInt(points[0]);
-        const mateCol = parseInt(points[1])
-        return (points && (mateRow === row && mateCol === col))
-
-
-    }
     return (
-        <>
-            <Board gameState={gameState} setSelected={setSelected} handleMovePiece={handleMovePiece} pointInCheck={gameState} isSquareInCheck={isSquareInCheck} isSquareInMate={isSquareInMate} />
+        <div className="Game">
+            <Clock gameState={gameState} active={!gameState.disabled && gameState.turn === 'b'} color={'b'} onTimeEnd={onTimeEnd} />
+            <Board
+                gameState={gameState}
+                setSelected={setSelected}
+                handleMovePiece={handleMovePiece}
+                pointInCheck={gameState}
+                isSquareInCheck={isSquareInCheck}
+                isSquareInMate={isSquareInMate}
+            />
             <Modal
                 show={showModal}
-                title="Checkmate!"
+                title="You win!"
                 message={modalMessage}
-                onClose={() => setShowModal(false)} // Close modal on button click
+                onClose={() => setShowModal(false)}
             />
-            <Promote show={showPromote.show} title={"Promote: "} color={gameState.turn[0]} onClose={() => setShowPromote(initialPromoteState)} promote={promotePiece}/>
-        </>
-    )
+            <Promote
+                show={showPromote.show}
+                title="Promote:"
+                color={gameState.turn}
+                onClose={() => setShowPromote(initialPromoteState)}
+                promote={promotePiece}
+            />
+            <Clock gameState={gameState} active={!gameState.disabled && gameState.turn === 'w'} color={'w'} onTimeEnd={onTimeEnd} />
+        </div>
+    );
 }

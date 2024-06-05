@@ -40,7 +40,7 @@ export function filterOwnCapturesAndPins(board, fromRow, fromCol, points, attack
     return points.filter(point => {
         const piece = board[point.row][point.col];
         const isLegal = isMoveLegal(board, fromRow, fromCol, point.row, point.col, attackingColor, castledRuined);
-        console.log(`Depth: ${depth} - Checking move from (${fromRow}, ${fromCol}) to (${point.row}, ${point.col}): ${isLegal}`);
+
         return (!piece || piece[0] !== attackingColor) && isLegal;
     });
 }
@@ -103,10 +103,10 @@ function getPathToKing(checkingPiece, kingPosition) {
 }
 
 function handleKingCastling(board, kingMoves, smCastleRuined = true, bigCastleRuined = true, row, col) {
-    if (!smCastleRuined) {
+    if (!smCastleRuined && board[row][7] === 'r') {
         kingMoves.push({ row, col: col + 2, smcastle: true });
     }
-    if (!bigCastleRuined) {
+    if (!bigCastleRuined && board[row][0] === 'r') {
         kingMoves.push({ row, col: col - 2, bigcastle: true });
     }
     return kingMoves.filter(pt => isPathClear(board, row, col, pt.row, pt.col));
@@ -175,7 +175,7 @@ function isSquareAttacked(board, row, col, attackerColor) {
 export function isMoveLegal(board, fromRow, fromCol, toRow, toCol, color, castledRuined) {
     const newBoard = makeMove(board, fromRow, fromCol, toRow, toCol);
     const inCheck = isInCheck(newBoard, color, castledRuined);
-    console.log(`Move from (${fromRow}, ${fromCol}) to (${toRow}, ${toCol}) results in check: ${inCheck}`);
+
     return !inCheck;
 }
 
@@ -187,7 +187,7 @@ export function makeMove(board, fromRow, fromCol, toRow, toCol) {
 }
 
 export function getPiece(board, row, col) {
-    return board[row][col];
+    return board[row][col] || null;
 }
 
 export function squareOccupied(board, row, col) {
@@ -217,15 +217,15 @@ export function isInCheck(board, color, castledRuined) {
 }
 
 
-function isKingInCheckAfterMove(board, moveFromRow, moveFromCol, moveToRow, moveToCol, color, castledRuined) {
-    const newBoard = makeMove(board, moveFromRow, moveFromCol, moveToRow, moveToCol, true);
-    const [kingRow, kingCol] = getKingPosition(newBoard, color);
-    const oppositeColor = getOppositeColor(color);
+// function isKingInCheckAfterMove(board, moveFromRow, moveFromCol, moveToRow, moveToCol, color, castledRuined) {
+//     const newBoard = makeMove(board, moveFromRow, moveFromCol, moveToRow, moveToCol, true);
+//     const [kingRow, kingCol] = getKingPosition(newBoard, color);
+//     const oppositeColor = getOppositeColor(color);
 
-    const opponentPieces = getAllPieces(newBoard, oppositeColor);
-    if(opponentPieces.length === 0) return false;
-    return opponentPieces.some(({ row, col, piece }) => {
-        const movesForPiece = getMovesForPiece(newBoard, row, col, piece, oppositeColor, castledRuined, false);
-        return movesForPiece.some(move => move.row === kingRow && move.col === kingCol);
-    });
-}
+//     const opponentPieces = getAllPieces(newBoard, oppositeColor);
+//     if(opponentPieces.length === 0) return false;
+//     return opponentPieces.some(({ row, col, piece }) => {
+//         const movesForPiece = getMovesForPiece(newBoard, row, col, piece, oppositeColor, castledRuined, false);
+//         return movesForPiece.some(move => move.row === kingRow && move.col === kingCol);
+//     });
+// }

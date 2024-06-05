@@ -1,105 +1,78 @@
-//returns all points that follow a specific rule
-
 import { isPathClear } from "./gameLogic";
 
-/*{
-    row: x,
-    col: y
-  }
-*/
-function getPlusMinus(row, col, plusRow, plusCol) {
+export const validatePoint = point => point.row >= 0 && point.row <= 7 && point.col >= 0 && point.col <= 7;
+
+const getPlusMinus = (row, col, plusRow, plusCol) => {
     const points = [
         { row: row + plusRow, col: col + plusCol },
         { row: row - plusRow, col: col + plusCol },
         { row: row + plusRow, col: col - plusCol },
         { row: row - plusRow, col: col - plusCol }
     ];
-    return points.filter(point => validatePoint(point));
-}
+    return points.filter(validatePoint);
+};
 
-
-function getAdjacent(row, col) {
+const getAdjacent = (row, col) => {
     const points = [
-        {
-            row: row + 1,
-            col: col
-        },
-        {
-            row: row - 1,
-            col: col
-        },
-        {
-            row: row,
-            col: col + 1
-        },
-        {
-            row: row,
-            col: col - 1
-        }
-    ]
-    return points.filter(point => validatePoint(point))
-}
-export function getKnightMoves(row, col) {
+        { row: row + 1, col: col },
+        { row: row - 1, col: col },
+        { row: row, col: col + 1 },
+        { row: row, col: col - 1 }
+    ];
+    return points.filter(validatePoint);
+};
+
+export const getKnightMoves = (row, col) => {
     const list1 = getPlusMinus(row, col, 1, 2);
     const list2 = getPlusMinus(row, col, 2, 1);
     return list1.concat(list2);
-}
-export function getRookMoves(board, row, col) {
+};
+
+export const getRookMoves = (board, row, col) => {
     const points = [];
     for (let i = 0; i < 8; i++) {
         if (i !== row && isPathClear(board, row, col, i, col)) {
-            points.push({ row: i, col: col });
+            points.push({ row: i, col });
         }
     }
     for (let j = 0; j < 8; j++) {
         if (j !== col && isPathClear(board, row, col, row, j)) {
-            points.push({ row: row, col: j });
+            points.push({ row, col: j });
         }
     }
     return points;
-}
-export function getQueenMoves(board, row, col) {
-    return getRookMoves(board, row, col).concat(getDiagonals(board, row, col));
-}
-export function getPawnMoves(board, row, col, color) {
-    const points = []
+};
 
-    if (color === 'b' && isPathClear(board, row, col, row + 1, col) && row < 7) {
-        points.push({
-            row: row + 1,
-            col: col
-        })
-        if (row === 1 && isPathClear(board, row, col, row + 2, col)) {
-            points.push({
-                row: row + 2,
-                col: col
-            })
+export const getQueenMoves = (board, row, col) =>
+    getRookMoves(board, row, col).concat(getDiagonals(board, row, col));
+
+export const getPawnMoves = (board, row, col, color) => {
+    const points = [];
+    if (color === 'b' && row < 7) {
+        if (isPathClear(board, row, col, row + 1, col)) {
+            points.push({ row: row + 1, col });
+            if (row === 1 && isPathClear(board, row, col, row + 2, col)) {
+                points.push({ row: row + 2, col });
+            }
+        }
+    } else if (color === 'w' && row > 0) {
+        if (isPathClear(board, row, col, row - 1, col)) {
+            points.push({ row: row - 1, col });
+            if (row === 6 && isPathClear(board, row, col, row - 2, col)) {
+                points.push({ row: row - 2, col });
+            }
         }
     }
-    else if (isPathClear(board, row, col, row - 1, col) && row > 0) {
-        points.push({
-            row: row - 1,
-            col: col
-        })
-        if (row === 6 && isPathClear(board, row, col, row - 2, col)) {
-            points.push({
-                row: row - 2,
-                col: col
-            })
-        }
-
-    }
     return points;
-}
-export function getKingMoves(row, col) {
-    const points = getPlusMinus(row, col, 1, 1).concat(getAdjacent(row, col));
+};
 
-    return points;
-}
-export function getAllMoveTypes(board, row, col) {
-    return getQueenMoves(board, row, col).concat(getKnightMoves(row, col));
-}
-export function getDiagonals(board, row, col) {
+export const getKingMoves = (row, col) =>
+    getPlusMinus(row, col, 1, 1).concat(getAdjacent(row, col));
+
+export const getAllMoveTypes = (board, row, col) =>
+    getQueenMoves(board, row, col).concat(getKnightMoves(row, col));
+
+export const getDiagonals = (board, row, col) => {
     const points = [];
     for (let i = 0; i < 8; i++) {
         const deltaX = row - i;
@@ -115,15 +88,7 @@ export function getDiagonals(board, row, col) {
         }
     }
     return points;
-}
+};
 
-export function isPointValidated(pt, possibleMoves) {
-    return possibleMoves && possibleMoves.some(point => {
-        return point.row === pt.row && point.col === pt.col
-    })
-
-}
-
-export function validatePoint(point) {
-    return point.row >= 0 && point.row <= 7 && point.col >= 0 && point.col <= 7
-}
+export const isPointValidated = (pt, possibleMoves) =>
+    possibleMoves && possibleMoves.some(point => point.row === pt.row && point.col === pt.col);

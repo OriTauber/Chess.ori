@@ -15,8 +15,14 @@ const soundManager = (() => {
         }
 
         if (audio) {
-            audio.currentTime = 0; // Rewind to the start
-            audio.play();
+            audio.currentTime = 0;
+             // Rewind to the start
+            audio.play().catch(() => {
+                
+            });
+
+
+            
         }
     };
 

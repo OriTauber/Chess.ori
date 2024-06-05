@@ -1,9 +1,9 @@
-.Board{
+.Board {
+    width: 720px;
+    height: 720px;
     display: flex;
     border: 1px solid black;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    width: 800px;
-    height: 800px;
 }
