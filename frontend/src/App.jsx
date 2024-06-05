@@ -9,7 +9,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/join" Component={JoinMenu}/>
+        <Route path="/" Component={JoinMenu}/>
 
         <Route path="/play/:room" Component={Game}/>
 

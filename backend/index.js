@@ -7,7 +7,7 @@ const app = express();
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 app.get('/', (req, res) => {
-    res.send("Hi")
+    res.redirect('/join')
 })
 
 app.listen(5000, () => {

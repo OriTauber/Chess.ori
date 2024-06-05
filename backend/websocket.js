@@ -23,13 +23,13 @@ function handleJoin(ws, roomId) {
     if (!rooms[roomId]) {
 
         rooms[roomId] = { white: ws, black: null, turn: 'w' };
-        ws.send(JSON.stringify({ type: 'color', color: 'w' }));
+        ws.send(JSON.stringify({ type: 'data', color: 'w', roomId }));
         console.log("Player joined as white.");
         checkStartGame(roomId);
 
     } else if (!rooms[roomId].black) {
         rooms[roomId].black = ws;
-        ws.send(JSON.stringify({ type: 'color', color: 'b' }));
+        ws.send(JSON.stringify({ type: 'data', color: 'b', roomId }));
         console.log("Player joined as black.");
         checkStartGame(roomId);
     }
@@ -50,7 +50,7 @@ function handleMove(ws, message) {
     const roomId = message.roomId;
     const room = rooms[roomId];
 
-    console.log(message.board)
+
     if (room) {
         const move = {
             type: 'move',

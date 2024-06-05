@@ -1,5 +1,5 @@
 // src/components/Game.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Board from "./Board/Board";
 import { movePiece, getDiagonalPawnCaptures, isPawnPromoting } from "../game/gameUtils";
 import { getKingMoves, isPointValidated } from "../game/moveValidator";
@@ -18,7 +18,7 @@ import '../styles/Game.css';
 const initialState = {
     board: [
         ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'], // Black pieces
-        ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'wp', 'bp'], // Black pawns
+        ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'], // Black pawns
         [null, null, null, null, null, null, null, null], // Empty squares
         [null, null, null, null, null, null, null, null],
         [null, null, null, null, null, null, null, null],
@@ -49,7 +49,7 @@ const initialState = {
             w: false
         }
     },
-    disabled: false
+    
 };
 
 const initialPromoteState = { show: false, row: null, col: null, toRow: null, toCol: null };
@@ -62,6 +62,8 @@ export default function Game() {
     const [playerColor, setPlayerColor] = useState(null);
     const [modalMessage, setModalMessage] = useState('');
     const [showPromote, setShowPromote] = useState(initialPromoteState);
+    const disabled = useRef(true);
+    const roomId = useRef(null);
     useEffect(() => {
         
         if (!ws) return;
@@ -72,8 +74,9 @@ export default function Game() {
 
             // Handle message type
             switch (message.type) {
-                case 'color':
+                case 'data':
                     setPlayerColor(message.color);
+                    roomId.current = message.roomId;
 
                     break;
                 case 'move':
@@ -81,8 +84,7 @@ export default function Game() {
                     handleMoveMessage(message);
                     break;
                 case 'start':
-                    
-                    handleStartMessage();
+                    handleStartMessage(message);
                     break;
                 // Add other message types as needed
                 default:
@@ -109,11 +111,12 @@ export default function Game() {
         }));
     };
 
-    const handleStartMessage = () => {
+    const handleStartMessage = (message) => {
         setGameState(prevState => ({
             ...prevState,
-            disabled: false
+            roomId: roomId.current
         }));
+        disabled.current = false;
     };
 
     const resetSquares = () => {
@@ -130,7 +133,7 @@ export default function Game() {
 
     const handleMovePiece = (toRow, toCol) => {
         
-        if (gameState.disabled) return false;
+        if (disabled.current) return false;
         const fromRow = gameState.selectedPiece.row;
         const fromCol = gameState.selectedPiece.col;
 
@@ -164,7 +167,7 @@ export default function Game() {
         // Send move to server
         ws.send(JSON.stringify({
             type: 'move',
-            roomId: "t", // Make sure you have a gameId in your gameState
+            roomId: roomId.current, // Make sure you have a gameId in your gameState
             from: { row: fromRow, col: fromCol },
             to: { row: toRow, col: toCol },
             board: newBoard,
@@ -187,7 +190,7 @@ export default function Game() {
 
     const promotePiece = piece => {
         
-        if (gameState.disabled) return;
+        if (disabled.current) return;
         const { row: selectedRow, col: selectedCol, toRow, toCol } = showPromote;
         if (selectedRow === null || selectedCol === null) return;
 
@@ -215,16 +218,16 @@ export default function Game() {
             setShowModal(true);
             setGameState(prevState => ({
                 ...prevState,
-                status: gameState.clock.status,
-                disabled: true
+                status: gameState.clock.status
             }));
+            disabled.current = true;
             return;
         }
     };
 
     const setSelected = (row, col) => {
 
-        if (gameState.disabled) return;
+        if (disabled.current) return;
 
         if (isSquareSelected(gameState.selectedPiece, row, col)) {
             resetSquares();
@@ -295,9 +298,9 @@ export default function Game() {
                 setShowModal(true);
                 setGameState(prevState => ({
                     ...prevState,
-                    status: `${color}-mate-${kingPosition[0]};${kingPosition[1]}`,
-                    disabled: true
+                    status: `${color}-mate-${kingPosition[0]};${kingPosition[1]}`
                 }));
+                disabled.current = true;
             }
 
             else {
@@ -331,7 +334,7 @@ export default function Game() {
 
     return (
         <div className="Game">
-            <Clock gameState={gameState} active={!gameState.disabled && gameState.turn === 'b'} color={'b'} onTimeEnd={onTimeEnd} />
+            <Clock gameState={gameState} active={!disabled.current && gameState.turn === 'b'} color={'b'} onTimeEnd={onTimeEnd} />
             <Board
                 gameState={gameState}
                 setSelected={setSelected}
@@ -353,7 +356,7 @@ export default function Game() {
                 onClose={() => setShowPromote(initialPromoteState)}
                 promote={promotePiece}
             />
-            <Clock gameState={gameState} active={!gameState.disabled && gameState.turn === 'w'} color={'w'} onTimeEnd={onTimeEnd} />
+            <Clock gameState={gameState} active={!disabled.current && gameState.turn === 'w'} color={'w'} onTimeEnd={onTimeEnd} />
         </div>
     );
 }
