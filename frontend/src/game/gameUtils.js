@@ -1,6 +1,6 @@
 export const getPieceAsset = piece => `/chessPieces/${piece}.png`;
 
-export function movePiece(board, fromRow, fromCol, toRow, toCol, smallCastle = false, bigCastle = false) {
+export function movePiece(board, fromRow, fromCol, toRow, toCol, smallCastle = false, bigCastle = false, useWS = false, ws = null, roomId = null) {
     // Deep clone the board to avoid mutating the original state
     const newBoard = board.map(row => [...row]);
 
@@ -17,11 +17,33 @@ export function movePiece(board, fromRow, fromCol, toRow, toCol, smallCastle = f
             const rook = newBoard[toRow][7];
             newBoard[toRow][toCol - 1] = rook;
             newBoard[toRow][7] = null;
+            if(useWS){
+                ws.send(JSON.stringify({
+                    type: 'move',
+                    roomId: roomId, // Make sure you have a gameId in your gameState
+                    from: { row: fromRow, col: fromCol },
+                    to: { row: toRow, col: toCol },
+                    board: newBoard,
+                    turn: gameState.turn === 'w' ? 'b' : 'w',
+                }));
+            }
         } else if (bigCastle) {
             const rook = newBoard[toRow][0];
             newBoard[toRow][toCol + 1] = rook;
             newBoard[toRow][0] = null;
+            if(useWS){
+                ws.send(JSON.stringify({
+                    type: 'move',
+                    roomId: roomId, // Make sure you have a gameId in your gameState
+                    from: { row: fromRow, col: fromCol },
+                    to: { row: toRow, col: toCol },
+                    board: newBoard,
+                    turn: gameState.turn === 'w' ? 'b' : 'w',
+                }));
+            }
         }
+    
+
     }
 
     return newBoard;

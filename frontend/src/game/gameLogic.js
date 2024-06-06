@@ -103,10 +103,11 @@ function getPathToKing(checkingPiece, kingPosition) {
 }
 
 function handleKingCastling(board, kingMoves, smCastleRuined = true, bigCastleRuined = true, row, col) {
-    if (!smCastleRuined && board[row][7] === 'r') {
+    
+    if (!smCastleRuined && board[row][7] && board[row][7].includes('r')) {
         kingMoves.push({ row, col: col + 2, smcastle: true });
     }
-    if (!bigCastleRuined && board[row][0] === 'r') {
+    if (!bigCastleRuined && board[row][0] && board[row][0].includes('r')) {
         kingMoves.push({ row, col: col - 2, bigcastle: true });
     }
     return kingMoves.filter(pt => isPathClear(board, row, col, pt.row, pt.col));
@@ -152,6 +153,7 @@ export function getMovesForPiece(board, row, col, piece, color, castledRuined, i
         case 'k':
             const smCastleRuined = castledRuined.small[color];
             const bigCastleRuined = castledRuined.big[color];
+            
             moves = includeCheckMoves ? handleKingCastling(board, getKingMoves(row, col), smCastleRuined, bigCastleRuined, row, col) :
                 filterOwnCapturesAndPins(board, row, col, handleKingCastling(board, getKingMoves(row, col), smCastleRuined, bigCastleRuined, row, col), color, castledRuined);
             break;
