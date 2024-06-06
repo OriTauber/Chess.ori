@@ -8,7 +8,7 @@ export const WebSocketProvider = ({ children }) => {
 
     useEffect(() => {
         const protocol = window.location.protocol.includes('https') ? 'wss': 'ws'
-        const socket = new WebSocket(`chessws.onrender.com`);
+        const socket = new WebSocket(`wss://chessws.onrender.com`);
 
         setWs(socket);
 
