@@ -288,6 +288,7 @@ export default function Game() {
         const inCheck = isInCheck(gameState.board, color, gameState.castleRuined);
 
         if (inCheck) {
+            let isCheckmate = false;
             soundManager.playSound('check');
             const kingPosition = getKingPosition(gameState.board, color);
             const kingMoves = getKingMoves(kingPosition[0], kingPosition[1]);
@@ -300,10 +301,16 @@ export default function Game() {
             });
 
             const canCapture = canCaptureCheckingPiece(gameState.board, color, checkingPieces, gameState.castleRuined);
-            const canBlock = canBlockCheck(gameState.board, color, checkingPieces, kingPosition, gameState.castleRuined);
+            const isKnightChecking = checkingPieces.some(pi => pi.piece && pi.piece.includes('n'))
+            if (!isKnightChecking) {
+                const canBlock = canBlockCheck(gameState.board, color, checkingPieces, kingPosition, gameState.castleRuined);
+                isCheckmate = validKingMoves.length === 0 && !canCapture && !canBlock;
 
-            const isCheckmate = validKingMoves.length === 0 && !canCapture && !canBlock;
-
+            }
+            else{
+               isCheckmate = validKingMoves.length === 0 && !canCapture;
+            }
+             
             if (isCheckmate) {
                 setModalMessage(`${color} is in checkmate. ${getOppositeColor(color)} wins!`);
                 setShowModal(true);

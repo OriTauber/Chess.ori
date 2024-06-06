@@ -74,12 +74,14 @@ export function canCaptureCheckingPiece(board, color, checkingPieces, castledRui
 }
 
 export function canBlockCheck(board, color, checkingPieces, kingPosition, castledRuined) {
-    if (checkingPieces.length > 1) return false; // More than one check means the check cannot be blocked
+    if (!checkingPieces || checkingPieces.length > 1) return false; // More than one check means the check cannot be blocked
+
 
     const path = getPathToKing(checkingPieces[0], kingPosition);
     const pieces = getAllPieces(board, color);
 
     for (let { row, col, piece } of pieces) {
+
         const moves = getMovesForPiece(board, row, col, piece, color, castledRuined);
         if (moves.some(move => path.some(p => p.row === move.row && p.col === move.col) && isMoveLegal(board, row, col, move.row, move.col, color, castledRuined))) {
             return true;
