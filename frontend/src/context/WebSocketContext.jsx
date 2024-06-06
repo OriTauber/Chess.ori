@@ -7,7 +7,8 @@ export const WebSocketProvider = ({ children }) => {
     const [ws, setWs] = useState(null);
 
     useEffect(() => {
-        const socket = new WebSocket('ws://localhost:8080');
+        const protocol = window.location.protocol.includes('https') ? 'wss': 'ws'
+        const ws = new WebSocket(`${protocol}://chessws.onrender.com`);
 
         setWs(socket);
 
