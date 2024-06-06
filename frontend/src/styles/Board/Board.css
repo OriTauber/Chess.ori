@@ -7,3 +7,6 @@
     align-items: center;
     flex-wrap: wrap;
 }
+.Rotate{
+    transform: rotate(180deg);
+}

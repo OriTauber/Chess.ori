@@ -2,7 +2,7 @@ import { useState } from "react";
 import "../../styles/Board/Square.css"
 import Piece from "./Piece"
 import Circle from "./Circle";
-export default function ({ isWhite, piece, setSelected, isSelected, possibleMove = false, inCheck = false, inMate = false}){
+export default function ({ isWhite, piece, setSelected, isSelected,color, possibleMove = false, inCheck = false, inMate = false}){
 
     return(
         <div className={`Square ${isSelected && "Selected"} ${inCheck && 'Check'} ${inMate && 'Mate'}`} style={{backgroundColor: isWhite ? "white" : "black"}} onClick={() => {
@@ -10,7 +10,7 @@ export default function ({ isWhite, piece, setSelected, isSelected, possibleMove
             setSelected();
 
     }}>
-        {piece && <Piece piece={piece}/>}
+        {piece && <Piece piece={piece} color={color}/>}
           {possibleMove && <Circle/>}
     </div>
     )

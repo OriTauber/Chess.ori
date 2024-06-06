@@ -3,7 +3,7 @@ import Square from "./Square"
 
 import { useEffect, useMemo } from "react";
 import { isPointValidated } from "../../game/moveValidator";
-export default function Board({ gameState, setSelected, isSquareInCheck, isSquareInMate }) {
+export default function Board({ gameState, setSelected, isSquareInCheck, isSquareInMate,color }) {
     useEffect(() => {
         
 
@@ -15,7 +15,7 @@ export default function Board({ gameState, setSelected, isSquareInCheck, isSquar
     console.log()
     return useMemo(() => (
         
-        <div className="Board">
+        <div className={`Board ${color === 'b' && "Rotate"}`}>
             {gameState.board.map((row, rowIndex) => (
                     
                     row.map((piece, colIndex) => {
@@ -24,6 +24,7 @@ export default function Board({ gameState, setSelected, isSquareInCheck, isSquar
                          <Square
                             key={`${rowIndex}-${colIndex}`}
                             piece={piece}
+                            color={color}
                             isWhite={(rowIndex * 8 + (colIndex - rowIndex % 2)) % 2 === 0}
                             setSelected={() => setSelected(rowIndex, colIndex)}
                             isSelected={gameState.selectedPiece && gameState.selectedPiece.row === rowIndex && gameState.selectedPiece.col === colIndex}

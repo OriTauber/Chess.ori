@@ -49,6 +49,7 @@ const initialState = {
             w: false
         }
     },
+    playerColor: null
     
 };
 
@@ -59,7 +60,7 @@ export default function Game() {
 
     const [gameState, setGameState] = useState(initialState);
     const [showModal, setShowModal] = useState(false);
-    const [playerColor, setPlayerColor] = useState(null);
+
     const [modalMessage, setModalMessage] = useState('');
     const [showPromote, setShowPromote] = useState(initialPromoteState);
     const disabled = useRef(true);
@@ -75,9 +76,9 @@ export default function Game() {
             // Handle message type
             switch (message.type) {
                 case 'data':
-                    setPlayerColor(message.color);
+                    
                     roomId.current = message.roomId;
-
+                    setGameState(gt => ({...gt, playerColor: message.color}))
                     break;
                 case 'move':
                     
@@ -96,7 +97,7 @@ export default function Game() {
             ws.onmessage = null; // Cleanup
         };
     }, [ws]);
-
+    console.log(gameState.playerColor)
     const handleMoveMessage = (message) => {
         setGameState(prevState => ({
             ...prevState,
@@ -143,7 +144,7 @@ export default function Game() {
         if (!piece) return false;
 
         const pieceColor = piece[0];
-        if (!pieceColor === playerColor) return;
+        if (!pieceColor === gameState.playerColor) return;
         const pieceType = piece[1];
 
         // Promoting
@@ -253,7 +254,7 @@ export default function Game() {
                 if (!movedPiece) return;
 
                 const color = movedPiece[0] || 'w';
-                if (color !== gameState.turn || color !== playerColor) return;
+                if (color !== gameState.turn || color !== gameState.playerColor) return;
 
                 setGameState(prevState => ({
                     ...prevState,
@@ -316,7 +317,7 @@ export default function Game() {
                 status: 'inprogress'
             }));
         }
-    }, [gameState.board, gameState.turn]);
+    }, [gameState.board, gameState.turn, gameState.playerColor]);
 
     const isSquareInCheck = (row, col) => {
         if (!gameState.status.includes('check')) return false;
@@ -334,7 +335,8 @@ export default function Game() {
 
     return (
         <div className="Game">
-            <Clock gameState={gameState} active={!disabled.current && gameState.turn === 'b'} color={'b'} onTimeEnd={onTimeEnd} />
+            <p>{gameState.playerColor}</p>
+            {gameState.playerColor && <Clock gameState={gameState} active={!disabled.current && gameState.turn === getOppositeColor(gameState.playerColor)} onTimeEnd={onTimeEnd} opposite={true}/>}
             <Board
                 gameState={gameState}
                 setSelected={setSelected}
@@ -342,6 +344,7 @@ export default function Game() {
                 pointInCheck={gameState}
                 isSquareInCheck={isSquareInCheck}
                 isSquareInMate={isSquareInMate}
+                color={gameState.playerColor}
             />
             <Modal
                 show={showModal}
@@ -356,7 +359,7 @@ export default function Game() {
                 onClose={() => setShowPromote(initialPromoteState)}
                 promote={promotePiece}
             />
-            <Clock gameState={gameState} active={!disabled.current && gameState.turn === 'w'} color={'w'} onTimeEnd={onTimeEnd} />
+            <Clock gameState={gameState} active={!disabled.current && gameState.turn === gameState.playerColor} onTimeEnd={onTimeEnd} />
         </div>
     );
 }

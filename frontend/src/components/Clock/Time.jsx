@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react';
 import '../../styles/Clock/Time.css';
+import { getOppositeColor } from '../../game/gameLogic';
 
-export default function Time({ gameState, color, active, onTimeEnd }) {
+export default function Time({ gameState, active, onTimeEnd, opposite }) {
+    function getInitialColor(){
+        return gameState.playerColor || 'w';
+    }
 
+    const [color, setColor] = useState(opposite ? getOppositeColor(getInitialColor()) : getInitialColor());
     const [time, setTime] = useState(gameState.clock[color]);
+    useEffect(() => {
 
+        setColor(opposite ? getOppositeColor(gameState.playerColor) : gameState.playerColor);
+    }, [gameState.playerColor])
     useEffect(() => {
         let localTime = time;
         const intervalId = setInterval(() => {
