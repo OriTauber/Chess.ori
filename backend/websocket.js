@@ -43,6 +43,9 @@ function checkStartGame(roomId) {
         room.black.send(JSON.stringify({ type: 'start' }));
         moveQueue[roomId] = [];
         processMoveQueue(roomId);
+        setTimeout(() => {
+            rooms[roomId] = null;
+        }, 1000 * 60 * 12)
     }
 }
 

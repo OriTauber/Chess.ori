@@ -71,12 +71,12 @@ export default function Game() {
         
         ws.onmessage = event => {
             const message = JSON.parse(event.data);
-            console.log("Received message:", message);
+            
 
             // Handle message type
             switch (message.type) {
                 case 'data':
-                    
+                    console.log("Received message:", message);
                     roomId.current = message.roomId;
                     setGameState(gt => ({...gt, playerColor: message.color}))
                     break;
@@ -97,7 +97,7 @@ export default function Game() {
             ws.onmessage = null; // Cleanup
         };
     }, [ws]);
-    console.log(gameState.playerColor)
+
     const handleMoveMessage = (message) => {
         setGameState(prevState => ({
             ...prevState,
@@ -113,11 +113,13 @@ export default function Game() {
     };
 
     const handleStartMessage = (message) => {
+        disabled.current = false;
         setGameState(prevState => ({
             ...prevState,
             roomId: roomId.current
         }));
-        disabled.current = false;
+
+        
     };
 
     const resetSquares = () => {
@@ -337,7 +339,7 @@ export default function Game() {
         <div className="Game">
             <p>{gameState.playerColor}</p>
             {gameState.playerColor && <Clock gameState={gameState} active={!disabled.current && gameState.turn === getOppositeColor(gameState.playerColor)} onTimeEnd={onTimeEnd} opposite={true}/>}
-            <Board
+            {gameState.playerColor && <Board
                 gameState={gameState}
                 setSelected={setSelected}
                 handleMovePiece={handleMovePiece}
@@ -345,7 +347,7 @@ export default function Game() {
                 isSquareInCheck={isSquareInCheck}
                 isSquareInMate={isSquareInMate}
                 color={gameState.playerColor}
-            />
+            />}
             <Modal
                 show={showModal}
                 title="You win!"
