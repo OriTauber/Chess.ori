@@ -50,7 +50,7 @@ const initialState = {
         }
     },
     playerColor: null
-    
+
 };
 
 const initialPromoteState = { show: false, row: null, col: null, toRow: null, toCol: null };
@@ -66,22 +66,22 @@ export default function Game() {
     const disabled = useRef(true);
     const roomId = useRef(null);
     useEffect(() => {
-        
+
         if (!ws) return;
-        
+
         ws.onmessage = event => {
             const message = JSON.parse(event.data);
-            
+
 
             // Handle message type
             switch (message.type) {
                 case 'data':
                     console.log("Received message:", message);
                     roomId.current = message.roomId;
-                    setGameState(gt => ({...gt, playerColor: message.color}))
+                    setGameState(gt => ({ ...gt, playerColor: message.color }))
                     break;
                 case 'move':
-                    
+
                     handleMoveMessage(message);
                     break;
                 case 'start':
@@ -119,7 +119,7 @@ export default function Game() {
             roomId: roomId.current
         }));
 
-        
+
     };
 
     const resetSquares = () => {
@@ -135,7 +135,7 @@ export default function Game() {
     };
 
     const handleMovePiece = (toRow, toCol) => {
-        
+
         if (disabled.current) return false;
         const fromRow = gameState.selectedPiece.row;
         const fromCol = gameState.selectedPiece.col;
@@ -192,14 +192,21 @@ export default function Game() {
     };
 
     const promotePiece = piece => {
-        
+
         if (disabled.current) return;
         const { row: selectedRow, col: selectedCol, toRow, toCol } = showPromote;
         if (selectedRow === null || selectedCol === null) return;
 
         const newBoard = movePiece(gameState.board, selectedRow, selectedCol, toRow, toCol);
         newBoard[toRow][toCol] = piece;
-
+        ws.send(JSON.stringify({
+            type: 'move',
+            roomId: roomId.current, // Make sure you have a gameId in your gameState
+            from: { row: selectedRow, col: selectedCol },
+            to: { row: toRow, col: toCol },
+            board: newBoard,
+            turn: gameState.turn === 'w' ? 'b' : 'w',
+        }));
         setGameState(prevState => ({
             ...prevState,
             board: newBoard,
@@ -211,6 +218,7 @@ export default function Game() {
             },
             turn: getOppositeColor(prevState.turn)
         }));
+
 
         setShowPromote(initialPromoteState);
     };
@@ -237,7 +245,7 @@ export default function Game() {
         } else {
             if (isAnySquareSelected(gameState.selectedPiece)) {
                 const piece = gameState.board[row][col];
-                
+
                 if (piece && piece[0] === gameState.selectedPiece.piece[0]) {
                     setGameState(prevState => ({
                         ...prevState,
@@ -338,7 +346,7 @@ export default function Game() {
     return (
         <div className="Game">
             <p>{gameState.playerColor}</p>
-            {gameState.playerColor && <Clock gameState={gameState} active={!disabled.current && gameState.turn === getOppositeColor(gameState.playerColor)} onTimeEnd={onTimeEnd} opposite={true}/>}
+            {gameState.playerColor && <Clock gameState={gameState} active={!disabled.current && gameState.turn === getOppositeColor(gameState.playerColor)} onTimeEnd={onTimeEnd} opposite={true} />}
             {gameState.playerColor && <Board
                 gameState={gameState}
                 setSelected={setSelected}
