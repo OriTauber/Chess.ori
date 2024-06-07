@@ -1,11 +1,12 @@
 .Square{
-    width: 88px;
-    height: 88px;
-    border: 1px inset black ;
+    width: 12.5%;
+    height: 12.5%;
+    border: 2% inset black ;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    box-sizing: border-box;
     
 
 }

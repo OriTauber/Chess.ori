@@ -6,3 +6,12 @@
     align-items: center;
     justify-content: center;
 }
+.Logo{
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 10px;
+    left: 0;
+    right: 0;
+    top: 0;
+}

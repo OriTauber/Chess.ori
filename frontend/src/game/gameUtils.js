@@ -1,4 +1,4 @@
-export const getPieceAsset = piece => `/chessPieces/${piece}.png`;
+export const getPieceAsset = piece => `/chessPieces/metal/${piece}.png`;
 
 export function movePiece(board, fromRow, fromCol, toRow, toCol, smallCastle = false, bigCastle = false, useWS = false, ws = null, roomId = null) {
     // Deep clone the board to avoid mutating the original state

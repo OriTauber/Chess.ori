@@ -1,5 +1,6 @@
 import Time from "./Time";
 import '../../styles/Clock/Clock.css'
+
 export default function ({ gameState, color, active, onTimeEnd, opposite }){
 
     return (

@@ -349,10 +349,13 @@ export default function Game() {
         const [mateRow, mateCol] = position.split(';').map(Number);
         return row === mateRow && col === mateCol;
     };
+    const handleDrop = (e, toRow, toCol) => {
+        e.preventDefault();
+        handleMovePiece(toRow, toCol);
+    };
 
     return (
         <div className="Game">
-            <p>{gameState.playerColor}</p>
             {gameState.playerColor && <Clock gameState={gameState} active={!disabled.current && gameState.turn === getOppositeColor(gameState.playerColor)} onTimeEnd={onTimeEnd} opposite={true} />}
             {gameState.playerColor && <Board
                 gameState={gameState}
@@ -362,6 +365,8 @@ export default function Game() {
                 isSquareInCheck={isSquareInCheck}
                 isSquareInMate={isSquareInMate}
                 color={gameState.playerColor}
+                handleDrop={handleDrop}
+
             />}
             <Modal
                 show={showModal}

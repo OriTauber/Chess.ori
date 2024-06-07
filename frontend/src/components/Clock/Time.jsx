@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import '../../styles/Clock/Time.css';
 import { getOppositeColor } from '../../game/gameLogic';
-
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 export default function Time({ gameState, active, onTimeEnd, opposite }) {
     function getInitialColor(){
         return gameState.playerColor || 'w';
@@ -50,7 +50,8 @@ export default function Time({ gameState, active, onTimeEnd, opposite }) {
 
     return (
         <div className="Time">
-            <p>{formatTime(time)}</p>
+            
+            <p><AccessAlarmIcon />  {formatTime(time)}</p>
         </div>
     );
 }

@@ -1,12 +1,46 @@
 .Board {
-    width: 720px;
-    height: 720px;
+    width: 90vw;
+    /* Make it adapt to the viewport width */
+    height: 90vw;
+    /* Make it a square relative to the viewport width */
+    max-width: 80%;
+    /* Limit maximum size for larger screens */
+    max-height: 80%;
+    /* Limit maximum size for larger screens */
     display: flex;
     border: 1px solid black;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
+    margin: 2rem;
+    /* Center the board within its container */
+    box-sizing: border-box;
+    /* Include padding and border in element's total width and height */
 }
-.Rotate{
+
+.Rotate {
     transform: rotate(180deg);
+}
+
+/* Media query for larger screens */
+@media (min-width: 768px) {
+    .Board {
+        width: 70vw;
+        height: 70vw;
+        max-width: 750px;
+        /* Cap size for very large screens */
+        max-height: 750px;
+        /* Cap size for very large screens */
+    }
+}
+
+/* Media query for very small screens */
+@media (max-width: 480px) {
+    .Board {
+        width: 100vw;
+        height: 100vw;
+        max-width: 95%;
+        max-height: 95%;
+        margin: 2rem 0;
+    }
 }

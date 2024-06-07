@@ -1,7 +1,18 @@
 .Piece{
     width: 75%;
     height: 75%;
+    cursor:grab;
 }
+
 .Rotate{
     transform: rotate(180deg);
+}
+.Piece:active {
+    transform: scale(1.2);
+    cursor: move;
+}
+.Piece.Rotate:active {
+    transform: scale(1.2) rotate(180deg);;
+    cursor: none;
+    opacity: 1;
 }
