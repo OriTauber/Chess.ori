@@ -1,4 +1,4 @@
-import { isPathClear } from "./gameLogic";
+import { isPathClear, squareOccupied } from "./gameLogic";
 
 export const validatePoint = point => point.row >= 0 && point.row <= 7 && point.col >= 0 && point.col <= 7;
 
@@ -61,6 +61,21 @@ export const getPawnMoves = (board, row, col, color) => {
             if (row === 6 && isPathClear(board, row, col, row - 2, col)) {
                 points.push({ row: row - 2, col });
             }
+        }
+    }
+    if (color === 'b' && row === 4) {
+        if (squareOccupied(board, row, col + 1)){
+            points.push({ row: row + 1, col: col + 1 });
+        }
+        else if (squareOccupied(board, row, col - 1)) {
+            points.push({ row: row + 1, col: col - 1 });
+        }
+    } else if (color === 'w' && row === 3) {
+        if (squareOccupied(board, row, col + 1)) {
+            points.push({ row: row - 1, col: col + 1 });
+        }
+        else if (squareOccupied(board, row, col - 1)) {
+            points.push({ row: row - 1, col: col - 1 });
         }
     }
     return points;

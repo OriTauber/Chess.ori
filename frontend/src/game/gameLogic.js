@@ -140,6 +140,7 @@ export function getMovesForPiece(board, row, col, piece, color, castledRuined, i
             const captures = getDiagonalPawnCaptures(row, col, color);
             const captureList = pointsToCaptureInList(board, captures, color);
             const validMoves = filterPawnOverride(board, getPawnMoves(board, row, col, color));
+            //CHECK FOR EN PASSANT VALIDATION
             moves = includeCheckMoves ? validMoves.concat(captureList) : filterOwnCapturesAndPins(board, row, col, validMoves.concat(captureList), color, castledRuined);
             break;
         }

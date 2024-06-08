@@ -50,7 +50,6 @@ const initialState = {
         }
     },
     playerColor: null
-
 };
 
 const initialPromoteState = { show: false, row: null, col: null, toRow: null, toCol: null };
@@ -65,6 +64,7 @@ export default function Game() {
     const [showPromote, setShowPromote] = useState(initialPromoteState);
     const disabled = useRef(true);
     const roomId = useRef(null);
+    const pawnsOnEnPassant = useRef([]);
     useEffect(() => {
 
         if (!ws) return;
@@ -99,6 +99,7 @@ export default function Game() {
     }, [ws]);
 
     const handleMoveMessage = (message) => {
+
         setGameState(prevState => ({
             ...prevState,
             board: message.board,
@@ -148,14 +149,19 @@ export default function Game() {
         const pieceColor = piece[0];
         if (!pieceColor === gameState.playerColor) return;
         const pieceType = piece[1];
-
+        pawnsOnEnPassant.current = [];
         // Promoting
         if (pieceType === 'p' && isPawnPromoting(toRow, pieceColor)) {
             return setShowPromote({ show: true, row: fromRow, col: fromCol, toRow, toCol });
         }
 
+
         const movedWithValidColor = pieceColor === gameState.turn;
         if (!movedWithValidColor) return;
+
+        if (pieceType === 'p' && Math.abs(fromRow - toRow) === 2) {
+            pawnsOnEnPassant.current.push({row: toRow, col: toCol, color: pieceColor})
+        }
 
         const smallCastleRuined = (pieceType === 'k' || (pieceType === 'r' && fromCol === 7)) && !gameState.castleRuined.small[pieceColor];
         const bigCastleRuined = (pieceType === 'k' || (pieceType === 'r' && fromCol === 0)) && !gameState.castleRuined.big[pieceColor];
@@ -165,7 +171,9 @@ export default function Game() {
 
         const newBoard = movePiece(gameState.board, fromRow, fromCol, toRow, toCol, fromCol - toCol === -2, fromCol - toCol === 2);
 
-
+        if (pieceType === 'p' && Math.abs(fromRow - toRow) === 1 && Math.abs(fromCol - toCol) === 1 && !squareOccupied(gameState.board, toRow, toCol)) {
+            newBoard[toRow + Math.sign(fromRow - toRow)][toCol] = null;
+        }
 
         // Send move to server
         ws.send(JSON.stringify({
