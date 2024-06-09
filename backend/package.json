@@ -5,12 +5,9 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-<<<<<<< HEAD
+    "wsStart": "node websocket.js",
     "start": "concurrently \"node websocket.js\" \"node index.js\"",
     "startdev": "concurrently \"nodemon websocket.js\" \"node index.js\"",
-=======
-    "start": "node websocket.js",
->>>>>>> 00e5eff6a46b694a6e8175e848a042ed51c4e204
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -23,8 +20,4 @@
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 00e5eff6a46b694a6e8175e848a042ed51c4e204
