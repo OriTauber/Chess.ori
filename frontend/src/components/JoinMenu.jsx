@@ -5,6 +5,7 @@ import '../styles/JoinMenu.css'
 import { Navigate, redirect, useNavigate } from 'react-router-dom';
 import { Box, Button, CardActionArea, CardActions, CardContent, Input, Typography } from '@mui/material';
 import JoinForm from './UI/JoinForm';
+
 export default function JoinMenu() {
     const [roomId, setRoomId] = useState('');
     const {ws, awaitConnection} = useWebSocket()
@@ -23,7 +24,9 @@ export default function JoinMenu() {
 
     return (
         <div className="JoinMenu">
+            
           <JoinForm handleJoin={handleJoin} setRoomId={setRoomId} roomId={roomId}/>
+
         </div>
     );
 }

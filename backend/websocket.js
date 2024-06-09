@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 const server = new WebSocket.Server({ port: 8080 });
 
 const rooms = {}; // Key: roomId, Value: { white: ws, black: ws, turn: 'w', time: { w: initialTime, b: initialTime }, interval: null }
-const initialTime = 300; // 5 minutes in seconds
+const initialTime = 10; // 5 minutes in seconds
 
 server.on('connection', (ws) => {
     ws.on('message', (message) => {
@@ -17,6 +17,10 @@ server.on('connection', (ws) => {
                 break;
         }
     });
+
+    ws.on('close', () => {
+        handleDisconnect(ws);
+    });
 });
 
 function handleJoin(ws, roomId) {
@@ -30,7 +34,7 @@ function handleJoin(ws, roomId) {
         };
         ws.send(JSON.stringify({ type: 'data', color: 'w', roomId }));
         console.log("Player joined as white.");
-    } else if (!rooms[roomId].black) {
+    } else if (!rooms[roomId].black && rooms[roomId].white != ws) {
         rooms[roomId].black = ws;
         ws.send(JSON.stringify({ type: 'data', color: 'b', roomId }));
         console.log("Player joined as black.");
@@ -44,13 +48,14 @@ function startGame(roomId) {
         console.log("Both players connected. Starting game.");
         room.white.send(JSON.stringify({ type: 'start' }));
         room.black.send(JSON.stringify({ type: 'start' }));
+        room.started = true;
         room.interval = setInterval(() => updateClock(roomId), 1000);
     }
 }
 
 function updateClock(roomId) {
     const room = rooms[roomId];
-    if (!room) return;
+    if (!room || !room.started) return;
 
     const currentTurn = room.turn;
     room.time[currentTurn] -= 1;
@@ -58,8 +63,7 @@ function updateClock(roomId) {
     // Send updated time to both players
     const timeMessage = JSON.stringify({
         type: 'time',
-        active: true,
-        time: room.time[currentTurn],
+        time: room.time,
         color: currentTurn
     });
 
@@ -84,23 +88,39 @@ function handleMove(ws, message) {
     const room = rooms[roomId];
 
     if (room) {
-        // Pause the clock
         const opponentColor = room.turn === 'w' ? 'b' : 'w';
         room.turn = opponentColor;
 
-        const move = {
+        const moveMessage = {
             type: 'move',
             board: message.board,
             from: message.from,
             to: message.to,
             turn: room.turn
         };
-        room.white.send(JSON.stringify(move));
-        room.black.send(JSON.stringify(move));
+        console.log("MOPVEFVEefafew")
+        if (room.white && room.black) {
+            room.white.send(JSON.stringify(moveMessage));
+            room.black.send(JSON.stringify(moveMessage));
+        }
+
+        // Restart the clock after a move
+        clearInterval(room.interval);
+        room.interval = setInterval(() => updateClock(roomId), 1000);
     }
 }
 
-
+function handleDisconnect(ws) {
+    for (const roomId in rooms) {
+        const room = rooms[roomId];
+        if (room.white && room.black && room.white === ws || room.black === ws) {
+            clearInterval(room.interval);
+            delete rooms[roomId];
+            console.log(`Player disconnected. Room ${roomId} closed.`);
+            break;
+        }
+    }
+}
 
 function getPlayerColor(ws, room) {
     if (!room) return null;

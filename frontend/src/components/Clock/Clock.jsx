@@ -1,11 +1,11 @@
 import Time from "./Time";
 import '../../styles/Clock/Clock.css'
 
-export default function ({ ws,color, onTimeEnd, opposite,gameState }){
+export default function ({ ws, onTimeEnd, opposite,gameState }){
 
     return (
         <div className="Clock">
-            <Time ws={ws} onTimeEnd={onTimeEnd} color={color} opposite={opposite} gameState={gameState}/>
+            <Time ws={ws} onTimeEnd={onTimeEnd} opposite={opposite} gameState={gameState}/>
         </div>
     )
 }

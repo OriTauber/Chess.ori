@@ -2,52 +2,27 @@ import { useState, useEffect, useRef } from 'react';
 import '../../styles/Clock/Time.css';
 import { getOppositeColor } from '../../game/gameLogic';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
-export default function Time({ gameState, ws, onTimeEnd, opposite }) {
+export default function Time({ gameState, ws, onTimeEnd, opposite,colora  }) {
     function getInitialColor(){
         return gameState.playerColor || 'w';
     }
 
     const [color, setColor] = useState(opposite ? getOppositeColor(getInitialColor()) : getInitialColor());
-    const [time, setTime] = useState(gameState.clock[color]);
+    const [time, setTime] = useState(300);
     const active = useRef(false);
     useEffect(() => {
         setColor(opposite ? getOppositeColor(gameState.playerColor) : gameState.playerColor);
+
     }, [gameState.playerColor])
     useEffect(() => {
-        ws.onmessage = event => {
-            const message = JSON.parse(event.data);
-            if(!message || !message.type || !message.type === 'time') return;
-            const {active: isActive, time} = message;
-            active.current = isActive;
-            setTime(time);
-        }
-    }, [ws, color]);
-    // useEffect(() => {
-    //     let localTime = time;
-    //     const intervalId = setInterval(() => {
-  
-    //         if (active) {
 
-    //             if(localTime<= 0) {
-                    
-    //                 clearInterval(intervalId);
-    //                 onTimeEnd(color);
-    //                 return;
-    //             }
-    //             else {
-    //                 localTime--;
-    //                 setTime(prevTime => {
-    //                     const newTime = Math.max(prevTime - 1, 0); // Decrement time by 0.1 seconds
-    //                     return newTime;
-    //                 });
-    //             }
-
-    //         }
-
-    //     }, 1000);
-
-    //     return () => clearInterval(intervalId); // Cleanup on unmount
-    // }, [active]);
+        active.current = gameState.turn === color
+        console.log(active.current)
+    },[gameState.turn])
+    useEffect(() => {
+        if(gameState.turn === color)
+            setTime(gameState.clock[color])
+    }, [gameState.clock]);
 
     function formatTime(time) {
         const minutes = Math.floor(time / 60);

@@ -15,6 +15,7 @@ import Clock from "./Clock/Clock";
 import { WebSocketProvider, useWebSocket } from '../context/WebSocketContext';
 import '../styles/Game.css';
 
+
 const initialState = {
     board: [
         ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'], // Black pieces
@@ -49,7 +50,8 @@ const initialState = {
             w: false
         }
     },
-    playerColor: null
+    playerColor: null,
+    winner: null
 };
 
 const initialPromoteState = { show: false, row: null, col: null, toRow: null, toCol: null };
@@ -73,19 +75,25 @@ export default function Game() {
 
             const handleMessage = (event) => {
                 const message = JSON.parse(event.data);
-                console.log(message);
+
 
                 switch (message.type) {
                     case 'data':
-                        console.log("Received message:", message);
+                        roomId.current = message.roomId;
                         setGameState((gt) => ({ ...gt, playerColor: message.color }));
                         break;
                     case 'move':
+
                         handleMoveMessage(message);
+                        break;
+                    case 'time':
+                        handleTimeUpdate(message);
                         break;
                     case 'start':
                         handleStartMessage(message);
                         break;
+                    case 'end':
+                        onTimeEnd(getOppositeColor(message.winner));
                     // Add other message types as needed
                     default:
                         break;
@@ -119,7 +127,15 @@ export default function Game() {
             }
         }));
     };
-
+    const handleTimeUpdate = (message) => {
+        setGameState((prevState) => ({
+            ...prevState,
+            clock: {
+                ...prevState.clock,
+                [message.color]: message.time[message.color]
+            }
+        }));
+    };
     const handleStartMessage = (message) => {
         disabled.current = false;
         setGameState(prevState => ({
@@ -240,11 +256,13 @@ export default function Game() {
 
     const onTimeEnd = color => {
         if (gameState.turn === color) {
-            setModalMessage(`${color} lost by time!. ${getOppositeColor(color)} wins!`);
+            const winner = getOppositeColor(color);
+            setModalMessage(`${color} lost by time!. ${winner} wins!`);
             setShowModal(true);
             setGameState(prevState => ({
                 ...prevState,
-                status: gameState.clock.status
+                status: gameState.clock.status,
+                winner: winner
             }));
             disabled.current = true;
             return;
@@ -371,6 +389,7 @@ export default function Game() {
 
     return (
         <div className="Game">
+
             <Clock ws={ws} onTimeEnd={onTimeEnd} opposite={true} gameState={gameState}/>
             {gameState.playerColor && <Board
                 gameState={gameState}
@@ -385,7 +404,7 @@ export default function Game() {
             />}
             <Modal
                 show={showModal}
-                title="You win!"
+                title={gameState.winner === gameState.playerColor ? "You win!" : "You lose!"}
                 message={modalMessage}
                 onClose={() => setShowModal(false)}
             />
