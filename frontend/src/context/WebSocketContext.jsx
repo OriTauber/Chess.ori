@@ -22,7 +22,7 @@ export const WebSocketProvider = ({ children }) => {
 
     useEffect(() => {
         const protocol = window.location.protocol.includes('https') ? 'wss' : 'ws';
-        const socketUrl = `ws://localhost:8080`;
+        const socketUrl = `wss://chessws.onrender.com`;
 
         const connect = () => {
             const socket = new WebSocket(socketUrl);
