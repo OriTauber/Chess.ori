@@ -11,9 +11,9 @@ const Modal = ({ show, title, message, onClose }) => {
     return (
         <div className="modal-backdrop">
             <div className="modal-content">
-                <h2>{title}</h2>
-                <p>{formatMessage(message)}</p>
-                <button onClick={onClose}>Close</button>
+                <h2 className='modal-title'>{title}</h2>
+                <p className='modal-text'>{formatMessage(message)}</p>
+                <button onClick={onClose} className='modal-button'>Close</button>
             </div>
         </div>
     );

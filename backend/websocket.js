@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 const server = new WebSocket.Server({ port: 8080 });
 
 const rooms = {}; // Key: roomId, Value: { white: ws, black: ws, turn: 'w', time: { w: initialTime, b: initialTime }, interval: null }
-const initialTime = 10; // 5 minutes in seconds
+const initialTime = 300; // 5 minutes in seconds
 
 server.on('connection', (ws) => {
     ws.on('message', (message) => {
@@ -15,6 +15,11 @@ server.on('connection', (ws) => {
             case 'move':
                 handleMove(ws, parsedMessage);
                 break;
+            case 'enpassant':
+                handleEnpassant(ws, parsedMessage);
+                break;
+            case 'draw':
+                declareDraw(parsedMessage.roomId, parsedMessage.reason)    
         }
     });
 
@@ -22,7 +27,19 @@ server.on('connection', (ws) => {
         handleDisconnect(ws);
     });
 });
+function handleEnpassant(ws, message) {
+    const roomId = message.roomId;
+    const room = rooms[roomId];
 
+    if (room) {
+        const opponent = message.point.color === 'w' ? room.black : room.white;
+
+        opponent.send(JSON.stringify({
+            type: 'enpassant',
+            point: message.point
+        }))
+    }
+}
 function handleJoin(ws, roomId) {
     if (!rooms[roomId]) {
         rooms[roomId] = {
@@ -41,7 +58,15 @@ function handleJoin(ws, roomId) {
         startGame(roomId);
     }
 }
-
+function declareDraw(roomId, reason = "") {
+    const room = rooms[roomId];
+    if (room) {
+        room.white.send(JSON.stringify({ type: 'draw', reason }))
+        room.black.send(JSON.stringify({ type: 'draw', reason }))
+        console.log("Game ended peacefully!")
+        deleteRoom(roomId);
+    }
+}
 function startGame(roomId) {
     const room = rooms[roomId];
     if (room.white && room.black) {
@@ -114,9 +139,8 @@ function handleDisconnect(ws) {
     for (const roomId in rooms) {
         const room = rooms[roomId];
         if (room.white && room.black && room.white === ws || room.black === ws) {
-            clearInterval(room.interval);
-            delete rooms[roomId];
-            console.log(`Player disconnected. Room ${roomId} closed.`);
+            deleteRoom(roomId)
+            console.log(`Player(s) disconnected. Room ${roomId} closed.`);
             break;
         }
     }
@@ -127,4 +151,11 @@ function getPlayerColor(ws, room) {
     if (ws === room.white) return 'w';
     if (ws === room.black) return 'b';
     return null;
+}
+function deleteRoom(roomId) {
+    const room = rooms[roomId];
+    if (room) {
+        clearInterval(room.interval);
+        delete rooms[roomId];
+    }
 }

@@ -4,7 +4,7 @@ import "../styles/Promote.css"
 const Promote = ({ show, title, color= 'w', onClose, promote}) => {
     if (!show) return null;
     function getPiecePath(piece){
-        return `/chessPieces/${color}${piece}.png`
+        return `/chessPieces/metal/${color}${piece}.png`
     }
     return (
         <div className="modal-backdrop">

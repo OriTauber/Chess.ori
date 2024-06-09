@@ -17,7 +17,7 @@ export default function Time({ gameState, ws, onTimeEnd, opposite,colora  }) {
     useEffect(() => {
 
         active.current = gameState.turn === color
-        console.log(active.current)
+
     },[gameState.turn])
     useEffect(() => {
         if(gameState.turn === color)
