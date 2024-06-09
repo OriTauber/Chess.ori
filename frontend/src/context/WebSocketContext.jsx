@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const WebSocketContext = createContext(null);
-
+const wsURI = 'chessws.onrender.com'
 export const WebSocketProvider = ({ children }) => {
     const [ws, setWs] = useState(null);
     const [connected, setConnected] = useState(false);
@@ -9,7 +9,7 @@ export const WebSocketProvider = ({ children }) => {
 
     const checkServerStatus = async () => {
         try {
-            const response = await fetch('/health');
+            const response = await fetch(`https://${wsURI}`);
             if (response.ok) {
                 setServerOnline(true);
             } else {
@@ -22,7 +22,7 @@ export const WebSocketProvider = ({ children }) => {
 
     useEffect(() => {
         const protocol = window.location.protocol.includes('https') ? 'wss' : 'ws';
-        const socketUrl = `wss://chessws.onrender.com`;
+        const socketUrl = `${protocol}://${wsURI}`;
 
         const connect = () => {
             const socket = new WebSocket(socketUrl);
