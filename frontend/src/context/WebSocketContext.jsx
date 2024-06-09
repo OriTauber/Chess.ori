@@ -12,11 +12,9 @@ export const WebSocketProvider = ({ children }) => {
             const response = await fetch(`https://${wsURI}`, {
                 mode: 'no-cors'
             });
-            if (response.ok) {
-                setServerOnline(true);
-            } else {
-                setServerOnline(false);
-            }
+
+            setServerOnline(true);
+
         } catch (error) {
             setServerOnline(false);
         }
