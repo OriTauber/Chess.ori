@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "concurrently \"node websocket.js\" \"node index.js\"",
+    "startdev": "concurrently \"nodemon websocket.js\" \"node index.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -12,7 +12,7 @@ import soundManager from "../game/soundManager";
 import Modal from "./Modal";
 import Promote from "./Promote";
 import Clock from "./Clock/Clock";
-import { useWebSocket } from '../context/WebSocketContext';
+import { WebSocketProvider, useWebSocket } from '../context/WebSocketContext';
 import '../styles/Game.css';
 
 const initialState = {
@@ -55,48 +55,55 @@ const initialState = {
 const initialPromoteState = { show: false, row: null, col: null, toRow: null, toCol: null };
 
 export default function Game() {
-    const ws = useWebSocket();
+    
 
     const [gameState, setGameState] = useState(initialState);
     const [showModal, setShowModal] = useState(false);
-
+    const {ws, awaitConnection} = useWebSocket()
     const [modalMessage, setModalMessage] = useState('');
     const [showPromote, setShowPromote] = useState(initialPromoteState);
     const disabled = useRef(true);
     const roomId = useRef(null);
     const pawnsOnEnPassant = useRef([]);
     useEffect(() => {
+        const setupWebSocket = async () => {
+            await awaitConnection;
 
-        if (!ws) return;
+            if (!ws) return;
 
-        ws.onmessage = event => {
-            const message = JSON.parse(event.data);
+            const handleMessage = (event) => {
+                const message = JSON.parse(event.data);
+                console.log(message);
 
+                switch (message.type) {
+                    case 'data':
+                        console.log("Received message:", message);
+                        setGameState((gt) => ({ ...gt, playerColor: message.color }));
+                        break;
+                    case 'move':
+                        handleMoveMessage(message);
+                        break;
+                    case 'start':
+                        handleStartMessage(message);
+                        break;
+                    // Add other message types as needed
+                    default:
+                        break;
+                }
+            };
 
-            // Handle message type
-            switch (message.type) {
-                case 'data':
-                    console.log("Received message:", message);
-                    roomId.current = message.roomId;
-                    setGameState(gt => ({ ...gt, playerColor: message.color }))
-                    break;
-                case 'move':
+            ws.addEventListener('message', handleMessage);
 
-                    handleMoveMessage(message);
-                    break;
-                case 'start':
-                    handleStartMessage(message);
-                    break;
-                // Add other message types as needed
-                default:
-                    break;
-            }
+            // Send join message to server
+            ws.send(JSON.stringify({ type: 'join', roomId: roomId.current }));
+
+            return () => {
+                ws.removeEventListener('message', handleMessage); // Cleanup
+            };
         };
 
-        return () => {
-            ws.onmessage = null; // Cleanup
-        };
-    }, [ws]);
+        setupWebSocket();
+    }, [ws, awaitConnection]);
 
     const handleMoveMessage = (message) => {
 
@@ -364,7 +371,7 @@ export default function Game() {
 
     return (
         <div className="Game">
-            {gameState.playerColor && <Clock gameState={gameState} active={!disabled.current && gameState.turn === getOppositeColor(gameState.playerColor)} onTimeEnd={onTimeEnd} opposite={true} />}
+            <Clock ws={ws} onTimeEnd={onTimeEnd} opposite={true} gameState={gameState}/>
             {gameState.playerColor && <Board
                 gameState={gameState}
                 setSelected={setSelected}
@@ -389,7 +396,7 @@ export default function Game() {
                 onClose={() => setShowPromote(initialPromoteState)}
                 promote={promotePiece}
             />
-            <Clock gameState={gameState} active={!disabled.current && gameState.turn === gameState.playerColor} onTimeEnd={onTimeEnd} />
+            <Clock ws={ws} onTimeEnd={onTimeEnd} gameState={gameState}/>
         </div>
     );
 }

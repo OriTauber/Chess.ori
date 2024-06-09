@@ -7,13 +7,17 @@ import { Box, Button, CardActionArea, CardActions, CardContent, Input, Typograph
 import JoinForm from './UI/JoinForm';
 export default function JoinMenu() {
     const [roomId, setRoomId] = useState('');
-    const ws = useWebSocket()
+    const {ws, awaitConnection} = useWebSocket()
     const navigate = useNavigate();
+    
     const handleJoin = async (e) => {
-
-        if (ws && roomId.trim() !== '') {
-            ws.send(JSON.stringify({ type: 'join', roomId: roomId.trim() }));
-            navigate(`/play/${roomId}`)
+        e.preventDefault();
+        if (roomId.trim() !== '') {
+            await awaitConnection;
+            if (ws) {
+                ws.send(JSON.stringify({ type: 'join', roomId: roomId.trim() }));
+                navigate(`/play/${roomId.trim()}`);
+            }
         }
     };
 
