@@ -9,7 +9,12 @@ export const WebSocketProvider = ({ children }) => {
 
     const checkServerStatus = async () => {
         try {
-            const response = await fetch(`https://${wsURI}`);
+            const response = await fetch(`https://${wsURI}`, {
+                mode: 'cors',
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
             if (response.ok) {
                 setServerOnline(true);
             } else {
