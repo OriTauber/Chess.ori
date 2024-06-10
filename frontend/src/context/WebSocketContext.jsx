@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const WebSocketContext = createContext(null);
 const wsURI = 'chessws.onrender.com'
+const devwsURI = 'localhost:8080'
 export const WebSocketProvider = ({ children }) => {
     const [ws, setWs] = useState(null);
     const [connected, setConnected] = useState(false);

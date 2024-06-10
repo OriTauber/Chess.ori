@@ -183,7 +183,7 @@ export default function Game() {
 
         if (!squareOccupied(gameState.board, fromRow, fromCol) || !isPointValidated({ row: toRow, col: toCol }, gameState.selectedPiece.possibleMoves)) return false;
         const piece = getPiece(gameState.board, fromRow, fromCol);
-
+        const isACapture = squareOccupied(gameState.board, toRow, toCol);
         if (!piece) return false;
 
         const pieceColor = piece[0];
@@ -225,6 +225,8 @@ export default function Game() {
             roomId: roomId.current, 
             from: { row: fromRow, col: fromCol },
             to: { row: toRow, col: toCol },
+            piece: piece,
+            isCapture: isACapture,
             board: newBoard,
             turn: gameState.turn === 'w' ? 'b' : 'w',
         }));
