@@ -13,6 +13,7 @@ server.on('connection', (ws) => {
                 handleJoin(ws, parsedMessage.roomId);
                 break;
             case 'move':
+                console.log("got movin")
                 handleMove(ws, parsedMessage);
                 break;
         }

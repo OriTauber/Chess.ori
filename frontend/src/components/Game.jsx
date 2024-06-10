@@ -106,7 +106,7 @@ export default function Game() {
     }, [ws, awaitConnection]);
 
     const handleMoveMessage = (message) => {
-
+        console.log(message, "Hi")
         setGameState(prevState => ({
             ...prevState,
             board: message.board,
@@ -181,6 +181,7 @@ export default function Game() {
         if (pieceType === 'p' && Math.abs(fromRow - toRow) === 1 && Math.abs(fromCol - toCol) === 1 && !squareOccupied(gameState.board, toRow, toCol)) {
             newBoard[toRow + Math.sign(fromRow - toRow)][toCol] = null;
         }
+        console.log("MOVING")
 
         // Send move to server
         ws.send(JSON.stringify({
