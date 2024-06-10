@@ -6,7 +6,8 @@ import { getKingMoves, isPointValidated } from "../game/moveValidator";
 import {
     getKingPosition, getOppositeColor, pointsToCaptureInList, filterPawnOverride, filterOwnCapturesAndPins, getMovesForPiece,
     isMoveLegal, makeMove, getPiece, squareOccupied, isSquareSelected, isAnySquareSelected, isInCheck,
-    getAllPieces, canCaptureCheckingPiece, canBlockCheck
+    getAllPieces, canCaptureCheckingPiece, canBlockCheck,
+    getAllPiecesAllColors
 } from '../game/gameLogic';
 import soundManager from "../game/soundManager";
 import Modal from "./Modal";
@@ -14,18 +15,28 @@ import Promote from "./Promote";
 import Clock from "./Clock/Clock";
 import { WebSocketProvider, useWebSocket } from '../context/WebSocketContext';
 import '../styles/Game.css';
+const initialBoard = [
+    ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'], 
+    ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'], 
+    [null, null, null, null, null, null, null, null], 
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
+    ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']];
 
+
+    const testBoard = [
+    [null, null, null, null, 'bk', null, 'bn', null], 
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null], 
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null], 
+    [null, null, null, null, 'wk', null, 'wn', 'wr']];
 const initialState = {
-    board: [
-        ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'], // Black pieces
-        ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'], // Black pawns
-        [null, null, null, null, null, null, null, null], // Empty squares
-        [null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null],
-        ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'], // White pawns
-        ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']  // White pieces
-    ],
+    board: initialBoard,
     turn: 'w',
     status: 'beforestart',
     clock: {
@@ -49,22 +60,24 @@ const initialState = {
             w: false
         }
     },
-    playerColor: null
+    playerColor: null,
+    winner: null
 };
 
 const initialPromoteState = { show: false, row: null, col: null, toRow: null, toCol: null };
 
 export default function Game() {
-    
+
 
     const [gameState, setGameState] = useState(initialState);
     const [showModal, setShowModal] = useState(false);
-    const {ws, awaitConnection} = useWebSocket()
+    const { ws, awaitConnection } = useWebSocket()
     const [modalMessage, setModalMessage] = useState('');
+    const [modalTitle, setModalTitle] = useState('');
     const [showPromote, setShowPromote] = useState(initialPromoteState);
     const disabled = useRef(true);
     const roomId = useRef(null);
-    const pawnsOnEnPassant = useRef([]);
+    const pawnsOnEnPassant = useRef(null);
     useEffect(() => {
         const setupWebSocket = async () => {
             await awaitConnection;
@@ -73,18 +86,30 @@ export default function Game() {
 
             const handleMessage = (event) => {
                 const message = JSON.parse(event.data);
-                console.log(message);
+
 
                 switch (message.type) {
                     case 'data':
-                        console.log("Received message:", message);
+                        roomId.current = message.roomId;
                         setGameState((gt) => ({ ...gt, playerColor: message.color }));
                         break;
                     case 'move':
+
                         handleMoveMessage(message);
+                        break;
+                    case 'time':
+                        handleTimeUpdate(message);
                         break;
                     case 'start':
                         handleStartMessage(message);
+                        break;
+                    case 'end':
+                        onTimeEnd(getOppositeColor(message.winner));
+                    case 'enpassant':
+                        pawnsOnEnPassant.current = message.point;
+                        break;
+                    case 'draw':
+                        onDraw(message)
                         break;
                     // Add other message types as needed
                     default:
@@ -95,7 +120,7 @@ export default function Game() {
             ws.addEventListener('message', handleMessage);
 
             // Send join message to server
-            ws.send(JSON.stringify({ type: 'join', roomId: roomId.current }));
+            //ws.send(JSON.stringify({ type: 'join', roomId: roomId.current }));
 
             return () => {
                 ws.removeEventListener('message', handleMessage); // Cleanup
@@ -119,7 +144,15 @@ export default function Game() {
             }
         }));
     };
-
+    const handleTimeUpdate = (message) => {
+        setGameState((prevState) => ({
+            ...prevState,
+            clock: {
+                ...prevState.clock,
+                [message.color]: message.time[message.color]
+            }
+        }));
+    };
     const handleStartMessage = (message) => {
         disabled.current = false;
         setGameState(prevState => ({
@@ -156,7 +189,8 @@ export default function Game() {
         const pieceColor = piece[0];
         if (!pieceColor === gameState.playerColor) return;
         const pieceType = piece[1];
-        pawnsOnEnPassant.current = [];
+
+
         // Promoting
         if (pieceType === 'p' && isPawnPromoting(toRow, pieceColor)) {
             return setShowPromote({ show: true, row: fromRow, col: fromCol, toRow, toCol });
@@ -167,7 +201,10 @@ export default function Game() {
         if (!movedWithValidColor) return;
 
         if (pieceType === 'p' && Math.abs(fromRow - toRow) === 2) {
-            pawnsOnEnPassant.current.push({row: toRow, col: toCol, color: pieceColor})
+            const point = { row: toRow, col: toCol, color: pieceColor };
+
+
+            ws.send(JSON.stringify({ type: 'enpassant', point, roomId: roomId.current }))
         }
 
         const smallCastleRuined = (pieceType === 'k' || (pieceType === 'r' && fromCol === 7)) && !gameState.castleRuined.small[pieceColor];
@@ -181,12 +218,11 @@ export default function Game() {
         if (pieceType === 'p' && Math.abs(fromRow - toRow) === 1 && Math.abs(fromCol - toCol) === 1 && !squareOccupied(gameState.board, toRow, toCol)) {
             newBoard[toRow + Math.sign(fromRow - toRow)][toCol] = null;
         }
-        console.log("MOVING")
-
-        // Send move to server
+        //reset enpassant pawn
+        pawnsOnEnPassant.current = null;
         ws.send(JSON.stringify({
             type: 'move',
-            roomId: roomId.current, // Make sure you have a gameId in your gameState
+            roomId: roomId.current, 
             from: { row: fromRow, col: fromCol },
             to: { row: toRow, col: toCol },
             board: newBoard,
@@ -204,9 +240,25 @@ export default function Game() {
             },
             castleRuined: updatedCastleRuined
         }));
+        checkForDraws(newBoard);
+
         return true;
     };
-
+    const checkForDraws = (newBoard) => {
+        const allPieces = getAllPiecesAllColors(newBoard);
+        const kingAndKnights = allPieces
+        .map(pi => pi.piece)
+        .filter(type => type[1] === 'n');
+        console.log(kingAndKnights)
+        const isInsufficient = allPieces.length === 2 || (allPieces.length <= 4 && (kingAndKnights.length <= 1 || (kingAndKnights[0] !== kingAndKnights[1])))
+        if (isInsufficient) {
+            return ws.send(JSON.stringify({
+                type: 'draw',
+                roomId: roomId.current,
+                reason: 'Insufficient material'
+            }));
+        }
+    }
     const promotePiece = piece => {
 
         if (disabled.current) return;
@@ -241,16 +293,32 @@ export default function Game() {
 
     const onTimeEnd = color => {
         if (gameState.turn === color) {
-            setModalMessage(`${color} lost by time!. ${getOppositeColor(color)} wins!`);
+            const winner = getOppositeColor(color);
+            setModalMessage(`${color} lost by time!. ${winner} wins!`);
+            setModalTitle(winner === gameState.playerColor ? "You win!" : "You lose!")
             setShowModal(true);
             setGameState(prevState => ({
                 ...prevState,
-                status: gameState.clock.status
+                status: gameState.clock.status,
+                winner: winner
             }));
             disabled.current = true;
             return;
         }
     };
+    const onDraw = (message) => {
+
+        setModalMessage(`Draw${message.reason ? ` by ${message.reason}` : ''}!`);
+        setModalTitle("Draw");
+        setShowModal(true);
+        setGameState(prevState => ({
+            ...prevState,
+            status: 'Draw'
+        }));
+        disabled.current = true;
+        return;
+
+    }
 
     const setSelected = (row, col) => {
 
@@ -269,7 +337,7 @@ export default function Game() {
                             row,
                             col,
                             piece,
-                            possibleMoves: getMovesForPiece(prevState.board, row, col, piece, piece[0], prevState.castleRuined)
+                            possibleMoves: getMovesForPiece(prevState.board, row, col, piece, piece[0], prevState.castleRuined, false, pawnsOnEnPassant.current)
                         }
                     }));
                 } else {
@@ -288,7 +356,7 @@ export default function Game() {
                         row,
                         col,
                         piece: movedPiece,
-                        possibleMoves: getMovesForPiece(prevState.board, row, col, movedPiece, color, prevState.castleRuined)
+                        possibleMoves: getMovesForPiece(prevState.board, row, col, movedPiece, color, prevState.castleRuined, false, pawnsOnEnPassant.current)
                     }
                 }));
                 return true;
@@ -312,23 +380,24 @@ export default function Game() {
 
             const opponentColor = getOppositeColor(color);
             const checkingPieces = getAllPieces(gameState.board, opponentColor).filter(({ row, col, piece }) => {
-                const moves = getMovesForPiece(gameState.board, row, col, piece, opponentColor, gameState.castleRuined);
+                const moves = getMovesForPiece(gameState.board, row, col, piece, opponentColor, gameState.castleRuined, false, pawnsOnEnPassant.current);
                 return moves.some(move => move.row === kingPosition[0] && move.col === kingPosition[1]);
             });
 
-            const canCapture = canCaptureCheckingPiece(gameState.board, color, checkingPieces, gameState.castleRuined);
+            const canCapture = canCaptureCheckingPiece(gameState.board, color, checkingPieces, gameState.castleRuined, pawnsOnEnPassant.current);
             const isKnightChecking = checkingPieces.some(pi => pi.piece && pi.piece.includes('n'))
             if (!isKnightChecking) {
                 const canBlock = canBlockCheck(gameState.board, color, checkingPieces, kingPosition, gameState.castleRuined);
                 isCheckmate = validKingMoves.length === 0 && !canCapture && !canBlock;
 
             }
-            else{
-               isCheckmate = validKingMoves.length === 0 && !canCapture;
+            else {
+                isCheckmate = validKingMoves.length === 0 && !canCapture;
             }
-             
+
             if (isCheckmate) {
                 setModalMessage(`${color} is in checkmate. ${getOppositeColor(color)} wins!`);
+                setModalTitle(color === gameState.playerColor ? "You win!" : "You lose!")
                 setShowModal(true);
                 setGameState(prevState => ({
                     ...prevState,
@@ -372,7 +441,8 @@ export default function Game() {
 
     return (
         <div className="Game">
-            <Clock ws={ws} onTimeEnd={onTimeEnd} opposite={true} gameState={gameState}/>
+
+            <Clock ws={ws} onTimeEnd={onTimeEnd} opposite={true} gameState={gameState} />
             {gameState.playerColor && <Board
                 gameState={gameState}
                 setSelected={setSelected}
@@ -386,7 +456,7 @@ export default function Game() {
             />}
             <Modal
                 show={showModal}
-                title="You win!"
+                title={modalTitle}
                 message={modalMessage}
                 onClose={() => setShowModal(false)}
             />
@@ -397,7 +467,7 @@ export default function Game() {
                 onClose={() => setShowPromote(initialPromoteState)}
                 promote={promotePiece}
             />
-            <Clock ws={ws} onTimeEnd={onTimeEnd} gameState={gameState}/>
+            <Clock ws={ws} onTimeEnd={onTimeEnd} gameState={gameState} />
         </div>
     );
 }

@@ -46,7 +46,7 @@ export const getRookMoves = (board, row, col) => {
 export const getQueenMoves = (board, row, col) =>
     getRookMoves(board, row, col).concat(getDiagonals(board, row, col));
 
-export const getPawnMoves = (board, row, col, color) => {
+export const getPawnMoves = (board, row, col, color, enpassantSquare = null) => {
     const points = [];
     if (color === 'b' && row < 7) {
         if (isPathClear(board, row, col, row + 1, col)) {
@@ -63,23 +63,32 @@ export const getPawnMoves = (board, row, col, color) => {
             }
         }
     }
-    if (color === 'b' && row === 4) {
-        if (squareOccupied(board, row, col + 1)){
-            points.push({ row: row + 1, col: col + 1 });
+    //enpassant
+    
+    if (enpassantSquare) {
+        if (color === 'b' && row === 4) {
+            if (squareOccupied(board, row, col + 1) && pointsMatch(enpassantSquare, {row, col: col + 1})) {
+                points.push({ row: row + 1, col: col + 1 });
+            }
+            else if (squareOccupied(board, row, col - 1) && pointsMatch(enpassantSquare, { row, col: col - 1 })) {
+                points.push({ row: row + 1, col: col - 1 });
+            }
+        } else if (color === 'w' && row === 3) {
+            if (squareOccupied(board, row, col + 1) && pointsMatch(enpassantSquare, { row, col: col + 1 })) {
+                points.push({ row: row - 1, col: col + 1 });
+            }
+            else if (squareOccupied(board, row, col - 1) && pointsMatch(enpassantSquare, { row, col: col - 1 })) {
+                points.push({ row: row - 1, col: col - 1 });
+            }
         }
-        else if (squareOccupied(board, row, col - 1)) {
-            points.push({ row: row + 1, col: col - 1 });
-        }
-    } else if (color === 'w' && row === 3) {
-        if (squareOccupied(board, row, col + 1)) {
-            points.push({ row: row - 1, col: col + 1 });
-        }
-        else if (squareOccupied(board, row, col - 1)) {
-            points.push({ row: row - 1, col: col - 1 });
-        }
+
+    
     }
     return points;
 };
+const pointsMatch = (pt1, pt2) => {
+    return pt1.row === pt2.row && pt1.col === pt2.col;
+}
 
 export const getKingMoves = (row, col) =>
     getPlusMinus(row, col, 1, 1).concat(getAdjacent(row, col));

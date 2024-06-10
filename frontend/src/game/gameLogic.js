@@ -57,11 +57,23 @@ export function getAllPieces(board, color) {
     }
     return pieces;
 }
+export function getAllPiecesAllColors(board) {
+    const pieces = [];
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = board[row][col];
+            if (piece) {
+                pieces.push({ row, col, piece });
+            }
+        }
+    }
+    return pieces;
+}
 
-export function canCaptureCheckingPiece(board, color, checkingPieces, castledRuined) {
+export function canCaptureCheckingPiece(board, color, checkingPieces, castledRuined, enpassantSquare = null) {
     const pieces = getAllPieces(board, color);
     for (let { row, col, piece } of pieces) {
-        const moves = getMovesForPiece(board, row, col, piece, color, castledRuined);
+        const moves = getMovesForPiece(board, row, col, piece, color, castledRuined, false, enpassantSquare);
         for (let move of moves) {
             for (let checkingPiece of checkingPieces) {
                 if (move.row === checkingPiece.row && move.col === checkingPiece.col && isMoveLegal(board, row, col, move.row, move.col, color, castledRuined)) {
@@ -133,14 +145,14 @@ export function isPathClear(board, fromRow, fromCol, toRow, toCol) {
     return true;
 }
 
-export function getMovesForPiece(board, row, col, piece, color, castledRuined, includeCheckMoves = false) {
+export function getMovesForPiece(board, row, col, piece, color, castledRuined, includeCheckMoves = false, enpassantSquare = null) {
     let moves;
     switch (piece[1]) {
         case 'p': {
             const captures = getDiagonalPawnCaptures(row, col, color);
             const captureList = pointsToCaptureInList(board, captures, color);
-            const validMoves = filterPawnOverride(board, getPawnMoves(board, row, col, color));
-            //CHECK FOR EN PASSANT VALIDATION
+            //this also handles en passant
+            const validMoves = filterPawnOverride(board, getPawnMoves(board, row, col, color, enpassantSquare));
             moves = includeCheckMoves ? validMoves.concat(captureList) : filterOwnCapturesAndPins(board, row, col, validMoves.concat(captureList), color, castledRuined);
             break;
         }

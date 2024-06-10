@@ -15,10 +15,16 @@
     padding: 20px;
     border-radius: 5px;
     text-align: center;
+
 }
-h2{
-    margin: 20px;
+.modal-title{
+    margin: 25px;
 }
-p{
+.modal-text{
+    font-size: 18px;
+    margin: 10px;
+    margin-bottom: 20px;
+}
+.modal-button{
     margin: 5px;
 }

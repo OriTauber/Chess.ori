@@ -1,13 +1,27 @@
-import { Navigate, redirect, useNavigate } from 'react-router-dom';
-import { Box, Button, CardActionArea, CardActions, CardContent, Input, Typography,Card, CardMedia } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Button, CardActionArea, CardActions, CardContent, Input, Typography, Card, CardMedia, CircularProgress } from '@mui/material';
+import { useWebSocket } from '../../context/WebSocketContext';
 
-export default function({handleJoin, setRoomId, roomId}){
+const JoinGame = ({ handleJoin, setRoomId, roomId }) => {
+    const { connected } = useWebSocket();
+    const [isServerOn, setIsServerOn] = useState(false);
+
+    useEffect(() => {
+        setIsServerOn(connected);
+    }, [connected]);
+
     return (
         <>
-          <div className="animated-bg"></div>
+            <div className="animated-bg"></div>
             <Card className="card-container" sx={{ maxWidth: 400 }}>
-
                 <CardActionArea>
+                    <div style={{ textAlign: 'center' }}>
+                        {!connected ? <>
+                            <p style={{ padding: '7px', fontSize: '25px' }}>Connecting to server.. </p>
+                            < CircularProgress sx={{ margin: '7px' }} />
+                        </>
+                            : <p style={{ padding: '7px', fontSize: '25px' }}>Connected to server!</p>}
+                    </div>
                     <CardContent>
                         <Typography gutterBottom variant="h5" component="div" align="center" sx={{ fontSize: 45 }}>
                             Join a Game
@@ -60,5 +74,7 @@ export default function({handleJoin, setRoomId, roomId}){
                 </CardActions>
             </Card>
         </>
-    )
-}
+    );
+};
+
+export default JoinGame;
