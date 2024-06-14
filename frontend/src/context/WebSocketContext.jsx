@@ -3,14 +3,17 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const WebSocketContext = createContext(null);
 const wsURI = 'chessws.onrender.com'
 const devwsURI = 'localhost:8080'
+const devUri = 'localhost:8080'
+const RECONNECT_DELAY_MS = 500;
 export const WebSocketProvider = ({ children }) => {
     const [ws, setWs] = useState(null);
     const [connected, setConnected] = useState(false);
     const [serverOnline, setServerOnline] = useState(true);
+    const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
     const checkServerStatus = async () => {
         try {
-            const response = await fetch(`https://${wsURI}`, {
+            const response = await fetch(`http://${devUri}`, {
                 mode: 'no-cors'
             });
 
@@ -23,7 +26,7 @@ export const WebSocketProvider = ({ children }) => {
 
     useEffect(() => {
         const protocol = window.location.protocol.includes('https') ? 'wss' : 'ws';
-        const socketUrl = `${protocol}://${wsURI}`;
+        const socketUrl = `${protocol}://${devUri}`;
 
         const connect = () => {
             const socket = new WebSocket(socketUrl);
@@ -40,18 +43,25 @@ export const WebSocketProvider = ({ children }) => {
                 setConnected(false);
                 setServerOnline(false);
 
-                // Attempt to reconnect after a delay
-                setTimeout(connect, 10000);
+                // Attempt to reconnect after a delay, but limit the number of attempts
+                if (reconnectAttempts < 5) {
+                    setTimeout(connect, RECONNECT_DELAY_MS);
+                    setReconnectAttempts(reconnectAttempts + 1);
+                }
             };
 
             socket.onerror = () => {
                 console.log('Error connecting to WebSocket server');
                 setServerOnline(false);
 
-                // Attempt to reconnect after a delay
-                setTimeout(connect, 10000);
+                // Attempt to reconnect after a delay, but limit the number of attempts
+                if (reconnectAttempts < 5) {
+                    setTimeout(connect, RECONNECT_DELAY_MS);
+                    setReconnectAttempts(reconnectAttempts + 1);
+                }
             };
         };
+
 
         const initiateConnection = async () => {
             await checkServerStatus();
@@ -67,7 +77,7 @@ export const WebSocketProvider = ({ children }) => {
                 ws.close();
             }
         };
-    }, [serverOnline]);
+    }, [serverOnline, reconnectAttempts]);
 
     const awaitConnection = new Promise((resolve) => {
         if (connected) {
