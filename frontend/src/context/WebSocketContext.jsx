@@ -2,9 +2,16 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const WebSocketContext = createContext(null);
 const wsURI = 'chessws.onrender.com'
+<<<<<<< HEAD
 const devwsURI = 'localhost:8080'
+=======
+<<<<<<< HEAD
+>>>>>>> e87a941 (Redis)
 const devUri = 'localhost:8080'
 const RECONNECT_DELAY_MS = 500;
+=======
+const devwsURI = 'localhost:8080'
+>>>>>>> 919213ba682717b418d8138047a5fa3234440c0c
 export const WebSocketProvider = ({ children }) => {
     const [ws, setWs] = useState(null);
     const [connected, setConnected] = useState(false);
