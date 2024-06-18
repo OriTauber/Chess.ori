@@ -12,7 +12,7 @@ export const WebSocketProvider = ({ children }) => {
     const protocol = secure ? 'wss' : 'ws';
     const checkServerStatus = async () => {
         try {
-            const response = await fetch(`${window.location.protocol}://${secure ? wsURI : devwsURI}`, {
+            const response = await fetch(`https://${secure ? wsURI : devwsURI}`, {
                 mode: 'no-cors'
             });
 
@@ -25,7 +25,7 @@ export const WebSocketProvider = ({ children }) => {
 
     useEffect(() => {
         
-        const socketUrl = `${protocol}://${secure ? wsURI : devwsURI}`;
+        const socketUrl = `https://${secure ? wsURI : devwsURI}`;
 
         const connect = () => {
             const socket = new WebSocket(socketUrl);
