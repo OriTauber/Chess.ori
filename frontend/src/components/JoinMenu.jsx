@@ -13,6 +13,7 @@ export default function JoinMenu() {
     
     const handleJoin = async (e) => {
         e.preventDefault();
+
         if (roomId.trim() !== '') {
             await awaitConnection;
             if (ws) {

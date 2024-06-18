@@ -66,3 +66,31 @@ export function getDiagonalPawnCaptures(row, col, color) {
     }
     return [];
 }
+export function convertToChessNotation(fromRow, fromCol, toRow, toCol, isCapture, piece = '') {
+    // Map columns (0-7) to files ('a'-'h')
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    // Map rows (0-7) to ranks ('1'-'8')
+    const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+    // Get the starting and ending positions in chess notation
+    const fromPos = files[fromCol] + ranks[fromRow];
+    const toPos = files[toCol] + ranks[toRow];
+
+    // Determine the move notation
+    let moveNotation = '';
+    if (piece && piece != 'p') {
+        moveNotation += piece;
+    }
+
+    if (isCapture) {
+        if (piece === 'p') {
+            // For pawn captures, include the file of the pawn
+            moveNotation += files[fromCol];
+        }
+        moveNotation += 'x';
+    }
+
+    moveNotation += toPos;
+
+    return moveNotation;
+}

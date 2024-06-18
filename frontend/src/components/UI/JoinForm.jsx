@@ -41,6 +41,7 @@ const JoinGame = ({ handleJoin, setRoomId, roomId }) => {
                         flexDirection="column"
                         alignItems="center"
                         width="100%"
+                        onSubmit={handleJoin}
                     >
                         <Input
                             value={roomId}
@@ -55,6 +56,7 @@ const JoinGame = ({ handleJoin, setRoomId, roomId }) => {
                                 borderRadius: 1,
                                 padding: '10px'
                             }}
+
                         />
                         <Button
                             variant="contained"
@@ -67,6 +69,7 @@ const JoinGame = ({ handleJoin, setRoomId, roomId }) => {
                                 backgroundColor: '#006400'
                             }}
                             onClick={handleJoin}
+
                         >
                             Join
                         </Button>

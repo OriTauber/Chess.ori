@@ -3,14 +3,15 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const WebSocketContext = createContext(null);
 const wsURI = 'chessws.onrender.com'
 const devwsURI = 'localhost:8080'
+
 export const WebSocketProvider = ({ children }) => {
     const [ws, setWs] = useState(null);
     const [connected, setConnected] = useState(false);
     const [serverOnline, setServerOnline] = useState(true);
-
+    const protocol = window.location.protocol.includes('https') ? 'wss' : 'ws';
     const checkServerStatus = async () => {
         try {
-            const response = await fetch(`https://${wsURI}`, {
+            const response = await fetch(`${window.location.protocol}://${devwsURI}`, {
                 mode: 'no-cors'
             });
 
@@ -22,8 +23,8 @@ export const WebSocketProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        const protocol = window.location.protocol.includes('https') ? 'wss' : 'ws';
-        const socketUrl = `${protocol}://${wsURI}`;
+        
+        const socketUrl = `${protocol}://${devwsURI}`;
 
         const connect = () => {
             const socket = new WebSocket(socketUrl);

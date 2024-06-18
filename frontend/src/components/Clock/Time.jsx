@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import '../../styles/Clock/Time.css';
 import { getOppositeColor } from '../../game/gameLogic';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
-export default function Time({ gameState, ws, onTimeEnd, opposite,colora  }) {
+export default function Time({ gameState, ws, opposite,colora  }) {
     function getInitialColor(){
         return gameState.playerColor || 'w';
     }

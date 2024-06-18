@@ -1,7 +1,7 @@
 // src/components/Game.js
 import React, { useEffect, useRef, useState } from "react";
 import Board from "./Board/Board";
-import { movePiece, getDiagonalPawnCaptures, isPawnPromoting } from "../game/gameUtils";
+import { movePiece, getDiagonalPawnCaptures, isPawnPromoting, convertToChessNotation } from "../game/gameUtils";
 import { getKingMoves, isPointValidated } from "../game/moveValidator";
 import {
     getKingPosition, getOppositeColor, pointsToCaptureInList, filterPawnOverride, filterOwnCapturesAndPins, getMovesForPiece,
@@ -15,10 +15,11 @@ import Promote from "./Promote";
 import Clock from "./Clock/Clock";
 import { WebSocketProvider, useWebSocket } from '../context/WebSocketContext';
 import '../styles/Game.css';
+import GameMenu from "./UI/GameMenu";
 const initialBoard = [
-    ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'], 
-    ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'], 
-    [null, null, null, null, null, null, null, null], 
+    ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'],
+    ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'],
+    [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null],
@@ -26,14 +27,14 @@ const initialBoard = [
     ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']];
 
 
-    const testBoard = [
-    [null, null, null, null, 'bk', null, 'bn', null], 
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null], 
+const testBoard = [
+    [null, null, null, null, 'bk', null, 'bn', null],
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null], 
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
     [null, null, null, null, 'wk', null, 'wn', 'wr']];
 const initialState = {
     board: initialBoard,
@@ -77,6 +78,9 @@ export default function Game() {
     const [showPromote, setShowPromote] = useState(initialPromoteState);
     const disabled = useRef(true);
     const roomId = useRef(null);
+    const messages = useRef([]);
+    const moveHistory = useRef([]);
+    const playerColorRef = useRef(null);
     const pawnsOnEnPassant = useRef(null);
     useEffect(() => {
         const setupWebSocket = async () => {
@@ -92,6 +96,8 @@ export default function Game() {
                     case 'data':
                         roomId.current = message.roomId;
                         setGameState((gt) => ({ ...gt, playerColor: message.color }));
+                        playerColorRef.current = message.color;
+                        console.log("a")
                         break;
                     case 'move':
 
@@ -104,13 +110,19 @@ export default function Game() {
                         handleStartMessage(message);
                         break;
                     case 'end':
-                        onTimeEnd(getOppositeColor(message.winner));
+                        onEnd(message.winner, message.reason);
                     case 'enpassant':
                         pawnsOnEnPassant.current = message.point;
                         break;
                     case 'draw':
                         onDraw(message)
                         break;
+                    case 'chat':
+                        const msg = message.message;
+                        if (!(msg === messages.current[messages.current.length - 1])) {
+                            messages.current = [...messages.current, msg]
+                        }
+
                     // Add other message types as needed
                     default:
                         break;
@@ -131,7 +143,7 @@ export default function Game() {
     }, [ws, awaitConnection]);
 
     const handleMoveMessage = (message) => {
-        console.log(message, "Hi")
+
         setGameState(prevState => ({
             ...prevState,
             board: message.board,
@@ -143,6 +155,11 @@ export default function Game() {
                 possibleMoves: []
             }
         }));
+        if (message.notation) {
+            if (!(message.notation === moveHistory.current[moveHistory.current.length - 1])) {
+                moveHistory.current = [...moveHistory.current, message.notation]
+            }
+        }
     };
     const handleTimeUpdate = (message) => {
         setGameState((prevState) => ({
@@ -162,6 +179,7 @@ export default function Game() {
 
 
     };
+
 
     const resetSquares = () => {
         setGameState(prevState => ({
@@ -215,20 +233,24 @@ export default function Game() {
 
         const newBoard = movePiece(gameState.board, fromRow, fromCol, toRow, toCol, fromCol - toCol === -2, fromCol - toCol === 2);
 
+
         if (pieceType === 'p' && Math.abs(fromRow - toRow) === 1 && Math.abs(fromCol - toCol) === 1 && !squareOccupied(gameState.board, toRow, toCol)) {
             newBoard[toRow + Math.sign(fromRow - toRow)][toCol] = null;
         }
+        const moveNotation = convertToChessNotation(fromRow, fromCol, toRow, toCol, isACapture, pieceType);
         //reset enpassant pawn
         pawnsOnEnPassant.current = null;
+        moveHistory.current = [...moveHistory.current, moveNotation]
         ws.send(JSON.stringify({
             type: 'move',
-            roomId: roomId.current, 
+            roomId: roomId.current,
             from: { row: fromRow, col: fromCol },
             to: { row: toRow, col: toCol },
             piece: piece,
             isCapture: isACapture,
             board: newBoard,
             turn: gameState.turn === 'w' ? 'b' : 'w',
+            notation: moveNotation
         }));
         setGameState(prevState => ({
             ...prevState,
@@ -249,8 +271,8 @@ export default function Game() {
     const checkForDraws = (newBoard) => {
         const allPieces = getAllPiecesAllColors(newBoard);
         const kingAndKnights = allPieces
-        .map(pi => pi.piece)
-        .filter(type => type[1] === 'n');
+            .map(pi => pi.piece)
+            .filter(type => type[1] === 'n');
         console.log(kingAndKnights)
         const isInsufficient = allPieces.length === 2 || (allPieces.length <= 4 && (kingAndKnights.length <= 1 || (kingAndKnights[0] !== kingAndKnights[1])))
         if (isInsufficient) {
@@ -292,22 +314,33 @@ export default function Game() {
 
         setShowPromote(initialPromoteState);
     };
+    const onEnd = (winner, reason, status = `${winner}-wins;${getOppositeColor(winner)}-loses`) => {
 
-    const onTimeEnd = color => {
-        if (gameState.turn === color) {
-            const winner = getOppositeColor(color);
-            setModalMessage(`${color} lost by time!. ${winner} wins!`);
-            setModalTitle(winner === gameState.playerColor ? "You win!" : "You lose!")
-            setShowModal(true);
-            setGameState(prevState => ({
-                ...prevState,
-                status: gameState.clock.status,
-                winner: winner
-            }));
-            disabled.current = true;
-            return;
-        }
+        const loser = getOppositeColor(winner);
+        setModalMessage(`${winner} wins by ${reason}! ${loser} loses!`);
+
+
+        setModalTitle(winner === playerColorRef.current ? "You win!" : "You lose!")
+        setShowModal(true);
+        setGameState(prevState => ({
+            ...prevState,
+            status: status,
+            winner: winner
+        }));
+        disabled.current = true;
+        return;
+
     };
+    const sendEndMessage = (winner, reason = "Unknown", status = "default") => {
+        return ws.send(JSON.stringify({
+            type: 'end',
+            roomId: roomId.current,
+            winner,
+            reason,
+            status
+        }));
+    }
+
     const onDraw = (message) => {
 
         setModalMessage(`Draw${message.reason ? ` by ${message.reason}` : ''}!`);
@@ -369,6 +402,7 @@ export default function Game() {
 
 
     useEffect(() => {
+        console.log(gameState.playerColor)
         // Checks and mates, SFX
         const color = gameState.turn;
         const inCheck = isInCheck(gameState.board, color, gameState.castleRuined);
@@ -398,14 +432,7 @@ export default function Game() {
             }
 
             if (isCheckmate) {
-                setModalMessage(`${color} is in checkmate. ${getOppositeColor(color)} wins!`);
-                setModalTitle(color === gameState.playerColor ? "You win!" : "You lose!")
-                setShowModal(true);
-                setGameState(prevState => ({
-                    ...prevState,
-                    status: `${color}-mate-${kingPosition[0]};${kingPosition[1]}`
-                }));
-                disabled.current = true;
+                sendEndMessage(getOppositeColor(color), "checkmate", `${color}-mate-${kingPosition[0]};${kingPosition[1]}`)
             }
 
             else {
@@ -443,33 +470,51 @@ export default function Game() {
 
     return (
         <div className="Game">
+            <div className="GameContainer">
 
-            <Clock ws={ws} onTimeEnd={onTimeEnd} opposite={true} gameState={gameState} />
-            {gameState.playerColor && <Board
-                gameState={gameState}
-                setSelected={setSelected}
-                handleMovePiece={handleMovePiece}
-                pointInCheck={gameState}
-                isSquareInCheck={isSquareInCheck}
-                isSquareInMate={isSquareInMate}
-                color={gameState.playerColor}
-                handleDrop={handleDrop}
+                <Clock ws={ws} opposite={true} gameState={gameState} />
+                {gameState.playerColor && <Board
+                    gameState={gameState}
+                    setSelected={setSelected}
+                    handleMovePiece={handleMovePiece}
+                    pointInCheck={gameState}
+                    isSquareInCheck={isSquareInCheck}
+                    isSquareInMate={isSquareInMate}
+                    color={gameState.playerColor}
+                    handleDrop={handleDrop}
 
-            />}
-            <Modal
-                show={showModal}
-                title={modalTitle}
-                message={modalMessage}
-                onClose={() => setShowModal(false)}
-            />
-            <Promote
-                show={showPromote.show}
-                title="Promote:"
-                color={gameState.turn}
-                onClose={() => setShowPromote(initialPromoteState)}
-                promote={promotePiece}
-            />
-            <Clock ws={ws} onTimeEnd={onTimeEnd} gameState={gameState} />
+                />}
+                <Modal
+                    show={showModal}
+                    title={modalTitle}
+                    message={modalMessage}
+                    onClose={() => setShowModal(false)}
+                />
+                <Promote
+                    show={showPromote.show}
+                    title="Promote:"
+                    color={gameState.turn}
+                    onClose={() => setShowPromote(initialPromoteState)}
+                    promote={promotePiece}
+                />
+                <Clock ws={ws} gameState={gameState} />
+            </div>
+            <div className="UIContainer" style={{ display: showModal ? 'none' : 'flex' }}>
+                <GameMenu onResign={() => {
+                    sendEndMessage(getOppositeColor(playerColorRef.current), "resignation");
+                }}
+                    messages={messages.current}
+                    moves={moveHistory.current}
+                    sendMessage={(msg) => {
+                        ws.send(JSON.stringify({
+                            type: 'chat',
+                            roomId: roomId.current,
+                            message: msg,
+                            color: playerColorRef.current
+                        }));
+                    }} />
+            </div>
         </div>
+
     );
 }
