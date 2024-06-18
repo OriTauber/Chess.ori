@@ -39,19 +39,23 @@ export default function ({ onResign, onDraw, messages, sendMessage, moves }) {
                     ))}
                 </List>
                 <Box className="chat-input">
-                    <TextField
-                        fullWidth
-                        variant="outlined"
-                        size="small"
-                        placeholder="Type a message..."
-                        value={currentMessage}
-                        onChange={(e) => setCurrentMessage(e.target.value)}
-                    />
-                    <Button onClick={() => {
+                    <form action="" onSubmit={() => {
                         handleSendMessage(currentMessage)
-                    }} variant="contained" color="primary">
-                        Send
-                    </Button>
+                    }}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            placeholder="Type a message..."
+                            value={currentMessage}
+                            onChange={(e) => setCurrentMessage(e.target.value)}
+                        />
+                        <Button onClick={() => {
+                            handleSendMessage(currentMessage)
+                        }} variant="contained" color="primary">
+                            Send
+                        </Button>
+                    </form>
                 </Box>
             </Box>
             <Box className="moves moveContainer">
