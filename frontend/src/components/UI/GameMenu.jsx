@@ -38,10 +38,12 @@ export default function ({ onResign, onDraw, messages, sendMessage, moves }) {
                         </ListItem>
                     ))}
                 </List>
-                <Box className="chat-input">
-                    <form action="" onSubmit={() => {
-                        handleSendMessage(currentMessage)
-                    }}>
+                <form action="" onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendMessage(currentMessage)
+                }}>
+                    <Box className="chat-input">
+
                         <TextField
                             fullWidth
                             variant="outlined"
@@ -55,8 +57,9 @@ export default function ({ onResign, onDraw, messages, sendMessage, moves }) {
                         }} variant="contained" color="primary">
                             Send
                         </Button>
-                    </form>
-                </Box>
+
+                    </Box>
+                </form>
             </Box>
             <Box className="moves moveContainer">
                 <Typography variant="h6">Moves</Typography>
