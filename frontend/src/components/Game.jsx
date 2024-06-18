@@ -501,7 +501,9 @@ export default function Game() {
             </div>
             <div className="UIContainer" style={{ display: showModal ? 'none' : 'flex' }}>
                 <GameMenu onResign={() => {
-                    sendEndMessage(getOppositeColor(playerColorRef.current), "resignation");
+                    if(!disabled.current){
+                        sendEndMessage(getOppositeColor(playerColorRef.current), "resignation");
+                    }
                 }}
                     messages={messages.current}
                     moves={moveHistory.current}

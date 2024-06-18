@@ -33,6 +33,8 @@ const JoinGame = ({ handleJoin, setRoomId, roomId }) => {
                     height="194"
                     image="/logo.png"
                     alt="Logo"
+                    className='logo'
+
                 />
                 <CardActions>
                     <Box
@@ -63,7 +65,7 @@ const JoinGame = ({ handleJoin, setRoomId, roomId }) => {
                             color="success"
                             sx={{
                                 margin: 1,
-                                width: 150,
+                                width: 250,
                                 height: 50,
                                 fontSize: 20,
                                 backgroundColor: '#006400'
